@@ -4,6 +4,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 		name:'sp2',
 		connect:true,
 		character:{
+			mushun:['male','qun',4,['dcjinjian','dcshizhao']],
 			dc_zhaoyǎn:['male','wei',3,['dcfuning','dcbingji']],
 			wangwei:['male','qun',4,['dcruizhan','dcshilie']],
 			dc_liuye:['male','wei',3,['dcpoyuan','dchuace']],
@@ -193,10 +194,90 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 				sp2_huangjia:['caomao','liubian','dc_liuyu'],
 				sp2_zhangtai:['guozhao','fanyufeng','ruanyu','yangwan','re_panshu'],
 				sp2_jinse:['caojinyu','re_sunyi','re_fengfangnv','caohua','laiyinger','zhangfen'],
-				sp_decade:['huaman','caobuxing','re_maliang','xin_baosanniang','re_xinxianying','dongxie','zhouyi','dc_jiben','zhaoang','dc_liuba','liuhui','guanhai','quanhuijie','yinfuren','dc_huangquan','dc_huban','chengui','dingshangwan','luyi','dc_liuye','wangwei','dc_zhaoyǎn'],
+				sp_decade:['huaman','caobuxing','re_maliang','xin_baosanniang','re_xinxianying','dongxie','zhouyi','dc_jiben','zhaoang','dc_liuba','liuhui','guanhai','quanhuijie','yinfuren','dc_huangquan','dc_huban','chengui','dingshangwan','luyi','dc_liuye','wangwei','dc_zhaoyǎn','mushun'],
 			}
 		},
 		skill:{
+			//穆顺
+			dcjinjian:{
+				audio:2,
+				trigger:{
+					player:'damageEnd',
+					source:'damageSource',
+				},
+				forced:true,
+				locked:false,
+				filter:function(event,player,name){
+					return name=='damageSource'||(event.source&&event.source!=player&&event.source.isIn());
+				},
+				content:function(){
+					'step 0'
+					player.addMark('dcjinjian',1);
+					game.delayx();
+					'step 1'
+					var source=trigger.source;
+					if(source&&source!=player&&source.isIn()&&player.canCompare(source)){
+						player.chooseBool('是否和'+get.translation(source)+'拼点？','若你赢，则你恢复1点体力').set('goon',(player.countCards('h')==1||player.hasCard(function(card){
+							return get.value(card)<=5||get.number(card)>10;
+						}))&&(get.attitude(player,source)<=0||source.countCards('h')>=4)).set('ai',function(){
+							return _status.event.goon;
+						});
+					}
+					else event.finish();
+					'step 2'
+					if(result.bool){
+						player.line(trigger.source,'green');
+						player.chooseToCompare(trigger.source);
+					}
+					else event.finish();
+					'step 3'
+					if(result.bool) player.recover();
+				},
+				intro:{
+					name2:'劲',
+					content:'mark',
+				},
+				mod:{
+					attackRange:function(player,num){
+						return num+player.countMark('dcjinjian');
+					},
+				},
+			},
+			dcshizhao:{
+				audio:2,
+				usable:1,
+				trigger:{
+					player:['loseAfter'],
+					global:['equipAfter','addJudgeAfter','gainAfter','loseAsyncAfter','addToExpansionAfter'],
+				},
+				forced:true,
+				filter:function(event,player){
+					return player!=_status.currentPhase&&player.countCards('h')==0&&event.getl(player).hs.length>0;
+				},
+				content:function(){
+					if(player.hasMark('dcjinjian')){
+						player.removeMark('dcjinjian',1);
+						player.draw(2);
+					}
+					else{
+						player.addTempSkill('dcshizhao_effect');
+						player.addMark('dcshizhao_effect',1,false);
+						game.delayx();
+					}
+				},
+				subSkill:{
+					effect:{
+						charlotte:true,
+						onremove:true,
+						trigger:{player:'damageBegin1'},
+						forced:true,
+						content:function(){
+							trigger.num+=player.countMark(event.name);
+							player.removeSkill(event.name);
+						},
+					},
+				},
+			},
 			//赵俨
 			dcfuning:{
 				audio:2,
@@ -245,7 +326,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 							name:button.link[2],
 							isCard:true,
 							storage:{dcbingji:true},
-						},player);
+						},player,'forceEnable');
 					},
 					check:function(button){
 						var card={
@@ -996,7 +1077,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 						marktext:'裂',
 						intro:{
 							name:'决裂',
-							intro:'你害死了$！',
+							content:'你害死了$！',
 						},
 					},
 					revenge:{
@@ -1461,7 +1542,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 					'step 5'
 					if(result.control!='cancel2'){
 						var i=result.index;
-						targets[1-i].gain(cards[1-i],targets[i],'give');
+						targets[1-i].give(cards[1-i],targets[i],'give');
 					}
 				},
 				onremove:true,
@@ -5735,6 +5816,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 				usable:1,
 				trigger:{global:'recoverEnd'},
 				direct:true,
+				zhuSkill:true,
 				filter:function(event,player){
 					return player!=event.player&&event.player.group=='wei'&&event.player==_status.currentPhase&&
 					event.player.isIn()&&player.hasZhuSkill('zhushi',event.player);
@@ -11091,7 +11173,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 					if(result.bool){
 						var target=result.targets[0];
 						player.logSkill('qljsuiren',target);
-						player.giver(player.getCards('h',function(card){
+						player.give(player.getCards('h',function(card){
 							var type=get.type(card,player);
 							return (type=='basic'||type=='trick')&&get.tag(card,'damage')>0;
 						}),target,'give');
@@ -11662,7 +11744,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 						filter:function(event,player){
 							if(player.countMark('jielie_draw')>=3) return false;
 							var target=player.storage.jielie;
-							return target&&target==_status.currentPhase&&event.getg(target).length>0;
+							return target&&target!=_status.currentPhase&&event.getg(target).length>0;
 						},
 						logTarget:'player',
 						content:function(){
@@ -17158,7 +17240,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 					"step 7"
 					var list=[
 						[target,event.togain[result.index]],
-						[player,[1-result.index]]
+						[player,event.togain[1-result.index]]
 					];
 					game.loseAsync({
 						gain_list:list,
@@ -18171,30 +18253,35 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 				filterTarget:lib.filter.notMe,
 				content:function(){
 					player.awakenSkill('zhafu');
-					target.addSkill('zhafu_hf');
-					target.storage.zhafu_hf=player;
+					player.addSkill('zhafu_hf');
+					target.addMark('zhafu_hf',1);
 				},
 				subSkill:{
 					hf:{
 						trigger:{
-							player:'phaseDiscardBegin'
+							global:'phaseDiscardBegin'
 						},
 						forced:true,
-						popup:false,
 						charlotte:true,
-						onremove:true,
+						filter:function(event,player){
+							return event.player!=player&&event.player.hasMark('zhafu_hf');
+						},
 						content:function(){
 							'step 0'
-							if(player.countCards('h')<=1||player.storage.zhafu_hf.isDead()) event.finish();
+							var target=trigger.player;
+							event.target=target;
+							target.removeMark('zhafu_hf',1);
+							if(target.countCards('h')<=1) event.finish()	
 							'step 1'
-							player.storage.zhafu_hf.logSkill('zhafu_hf',player);
-							player.chooseCard('h',true,'选择保留一张手牌，将其余的手牌交给'+get.translation(player.storage.zhafu_hf)).ai=get.value;
+							target.chooseCard('h',true,'选择保留一张手牌，将其余的手牌交给'+get.translation(player)).set('ai',get.value);
 							'step 2'
-							var cards=player.getCards('h');
+							var cards=target.getCards('h');
 							cards.remove(result.cards[0]);
-							player.give(cards,player.storage.zhafu_hf);
-							'step 3'
-							player.removeSkill('zhafu_hf');
+							target.give(cards,player);
+						},
+						intro:{
+							content:'mark',
+							onunmark:true,
 						},
 					},
 				},
@@ -21053,6 +21140,11 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 			dcfuning_info:'当你使用牌时，你可以摸两张牌，然后弃置X张牌（X为你本回合内发动过〖抚宁〗的次数）。',
 			dcbingji:'秉纪',
 			dcbingji_info:'出牌阶段每种花色各限一次。若你有手牌且这些牌的花色均相同，则你可以展示手牌，然后选择一名其他角色，视为对其使用一张【杀】或【桃】（有距离限制）。',
+			mushun:'穆顺',
+			dcjinjian:'劲坚',
+			dcjinjian_info:'①当你受到其他角色造成的伤害后或造成伤害后，你获得一枚“劲”。然后你可以和伤害来源拼点，若你赢，你恢复1点体力。②你的攻击范围+X（X为“劲”数）。',
+			dcshizhao:'失诏',
+			dcshizhao_info:'锁定技。每回合限一次，当你于回合外失去手牌后，若你没有手牌，且你：有“劲”，则你移去一枚“劲”并摸两张牌；没有“劲”，则你本回合下一次受到的伤害+1。',
 
 			sp_whlw:"文和乱武",
 			sp_zlzy:"逐鹿中原",

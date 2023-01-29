@@ -7409,10 +7409,7 @@
 					window.el=line;
 					window.ec=column;
 					window.eo=err;
-					game.print(msg);
-					game.print(line);
-					game.print(column);
-					game.print(decodeURI(err.stack));
+					game.print(str);
 					if(!lib.config.errstop){
 						_status.withError=true;
 						game.loop();
@@ -17920,7 +17917,7 @@
 					return next;
 				},
 				//原有函数
-				init:function(character,character2,skill){
+				init:function(character,character2,skill,update){
 					if(typeof character=='string'&&!lib.character[character]){
 						lib.character[character]=get.character(character);
 					}
@@ -18087,7 +18084,7 @@
 							this._inits[i](this);
 						}
 					}
-					this.update();
+					if(update!==false) this.update();
 					return this;
 				},
 				initOL:function(name,character){
@@ -21823,7 +21820,7 @@
 						if(this.ws&&!this.ws.closed){
 							var player=this;
 							var time=parseInt(lib.configOL.choose_timeout)*1000;
-							if(_status.event.getParent().skillHidden){
+							if(_status.event._global_timer||_status.event.getParent().skillHidden){
 								for(var i=0;i<game.players.length;i++){
 									game.players[i].showTimer(time);
 								}
@@ -21876,6 +21873,16 @@
 					lib.node.torespond={};
 					if(typeof proceed=='function') proceed();
 					else if(_status.paused&&!noresume) game.resume();
+				},
+				tempUnwait:function(result){
+					if(!lib.node.torespond.hasOwnProperty(this.playerid)){
+						return;
+					}
+					var proceed;
+					if(typeof lib.node.torespond[this.playerid]=='function'&&lib.node.torespond[this.playerid]._noname_waiting){
+						proceed=lib.node.torespond[this.playerid](result,this);
+					}
+					if(typeof proceed=='function') proceed();
 				},
 				logSkill:function(name,targets,nature,logv){
 					if(get.itemtype(targets)=='player') targets=[targets];
@@ -27006,8 +27013,10 @@
 				return true;
 			},
 			cardSavable:function(card,player,target){
-				var mod2=game.checkMod(card,player,'unchanged','cardEnabled2',player);
-				if(mod2!='unchanged') return mod2;
+				if(get.itemtype(card)=='card'){
+					var mod2=game.checkMod(card,player,'unchanged','cardEnabled2',player);
+					if(mod2!='unchanged') return mod2;
+				}
 				var mod=game.checkMod(card,player,target,'unchanged','cardSavable',player);
 				if(mod!='unchanged') return mod;
 				var savable=get.info(card).savable;
@@ -27140,8 +27149,10 @@
 			cardEnabled:function(card,player,event){
 				if(player==undefined) player=_status.event.player;
 				if(!player) return false;
-				var mod2=game.checkMod(card,player,'unchanged','cardEnabled2',player);
-				if(mod2!='unchanged') return mod2;
+				if(get.itemtype(card)=='card'){
+					var mod2=game.checkMod(card,player,'unchanged','cardEnabled2',player);
+					if(mod2!='unchanged') return mod2;
+				}
 				card=get.autoViewAs(card,null,player);
 				if(event==='forceEnable'){
 					var mod=game.checkMod(card,player,'unchanged','cardEnabled',player);
@@ -27167,8 +27178,10 @@
 					}
 				}
 				if(player==undefined) player=_status.event.player;
-				var mod2=game.checkMod(card,player,'unchanged','cardEnabled2',player);
-				if(mod2!='unchanged') return mod2;
+				if(get.itemtype(card)=='card'){
+					var mod2=game.checkMod(card,player,'unchanged','cardEnabled2',player);
+					if(mod2!='unchanged') return mod2;
+				}
 				var mod=game.checkMod(card,player,'unchanged','cardRespondable',player);
 				if(mod!='unchanged') return mod;
 				return true;
@@ -28516,6 +28529,13 @@
 					var player=lib.playerOL[this.id];
 					if(player){
 						player.unwait(result);
+					}
+				},
+				tempResult:function(result){
+					if(lib.node.observing.contains(this)) return;
+					var player=lib.playerOL[this.id];
+					if(player){
+						player.tempUnwait(result);
 					}
 				},
 				startGame:function(){
@@ -46246,7 +46266,7 @@
 								node.node.hp.remove();
 								node.node.group.remove();
 								node.node.intro.remove();
-								if(node.node.replaceButton) node.node.replaceButton.remove();;
+								if(node.node.replaceButton) node.node.replaceButton.remove();
 							}
 							node.node={
 								name:ui.create.div('.name',node),
@@ -52642,6 +52662,7 @@
 			return card.name;
 		},
 		suit:function(card,player){
+			if(!card) return;
 			if(Array.isArray(card)){
 				if(card.length==1) return get.suit(card[0],player);
 				return 'none';
@@ -52661,7 +52682,9 @@
 			}
 		},
 		color:function(card,player){
+			if(!card) return;
 			if(Array.isArray(card)){
+				if(!card.length) return 'none';
 				var color=get.color(card[0],player);
 				for(var i=1;i<card.length;i++){
 					if(get.color(card[i],player)!=color) return 'none';
