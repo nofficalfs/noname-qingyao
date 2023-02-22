@@ -42,7 +42,7 @@
 		},
 		updateURL:'https://raw.githubusercontent.com/libccy/noname',
 		mirrorURL:'https://nakamurayuri.coding.net/p/noname/d/noname/git/raw',
-		hallURL:'47.99.105.222',
+		hallURL:'159.75.51.253',
 		assetURL:'',
 		changeLog:[],
 		updates:[],
