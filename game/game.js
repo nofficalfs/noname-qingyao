@@ -22,6 +22,7 @@
 			cardMove:[],
 			custom:[],
 			useCard:[],
+			changeHp:[],
 		}],
 		cardtag:{
 			yingbian_zhuzhan:[],
@@ -7159,9 +7160,6 @@
 					}
 					return list;
 				};
-				Array.prototype.find=function(item){
-					return this.indexOf(item);
-				};
 				Array.prototype.contains=function(item){
 					return this.indexOf(item)!=-1;
 				};
@@ -7185,7 +7183,7 @@
 						for(var i=0;i<item.length;i++) this.remove(item[i]);
 						return;
 					}
-					var pos=this.find(item);
+					var pos=this.indexOf(item);
 					if(pos==-1){
 						return false;
 					}
@@ -10364,6 +10362,12 @@
 			zhengsu_leijin_info:'回合内所有于出牌阶段使用的牌点数递增且不少于三张。',
 			zhengsu_bianzhen_info:'回合内所有于出牌阶段使用的牌花色相同且不少于两张。',
 			zhengsu_mingzhi_info:'回合内所有于弃牌阶段弃置的牌花色均不相同且不少于两张。',
+			db_atk:'策略',
+			db_atk1:'全军出击',
+			db_atk2:'分兵围城',
+			db_def:'策略',
+			db_def1:'奇袭粮道',
+			db_def2:'开城诱敌',
 		},
 		element:{
 			content:{
@@ -10901,12 +10905,22 @@
 				},
 				chooseToDuiben:function(){
 					'step 0'
-					game.log(player,'对',target,'发起了','#y对策');
+					if(!event.namelist) event.namelist=['全军出击','分兵围城','奇袭粮道','开城诱敌'];
+					game.broadcastAll(function(list){
+						var list2=['db_atk1','db_atk2','db_def1','db_def2'];
+						for(var i=0;i<4;i++){
+							lib.card[list2[i]].image='card/'+list2[i]+(list[0]=='全军出击'?'':'_'+list[i]);
+							lib.translate[list2[i]]=list[i];
+						}
+					},event.namelist);
+					if(!event.title) event.title='对策';
+					game.log(player,'向',target,'发起了','#y'+event.title);
+					if(!event.ai) event.ai=function(){return 1+Math.random()};
 					if(_status.connectMode){
 						player.chooseButtonOL([
-							[player,['对策：请选择一种防御对策',[[['','','db_def2'],['','','db_def1']],'vcard']],true],
-							[target,['对策：请选择一种进攻之策',[[['','','db_atk1'],['','','db_atk2']],'vcard']],true]
-						],function(){},function(){return 1+Math.random()}).set('switchToAuto',function(){
+							[player,[event.title+'：请选择一种策略',[[['','','db_def2'],['','','db_def1']],'vcard']],true],
+							[target,[event.title+'：请选择一种策略',[[['','','db_atk1'],['','','db_atk2']],'vcard']],true]
+						],function(){},event.ai).set('switchToAuto',function(){
 							_status.event.result='ai';
 						}).set('processAI',function(){
 							var buttons=_status.event.dialog.buttons;
@@ -10923,11 +10937,11 @@
 						event.goto(4);
 					}
 					else{
-						player.chooseButton(['对策：请选择一种防御对策',[[['','','db_def2'],['','','db_def1']],'vcard']],true).ai=function(){return 1+Math.random()};
+						player.chooseButton([event.title+'：请选择一种策略',[[['','','db_def2'],['','','db_def1']],'vcard']],true).ai=event.ai;
 					}
 					'step 2'
 					event.mes=result.links[0][2];
-					target.chooseButton(['对策：请选择一种进攻之策',[[['','','db_atk1'],['','','db_atk2']],'vcard']],true).ai=function(){return 1+Math.random()};
+					target.chooseButton([event.title+'：请选择一种策略',[[['','','db_atk1'],['','','db_atk2']],'vcard']],true).ai=event.ai;
 					'step 3'
 					event.tes=result.links[0][2];
 					'step 4'
@@ -10937,27 +10951,29 @@
 					ui.arena.classList.add('thrownhighlight');
 					game.addVideo('thrownhighlight1');
 					target.$compare(game.createCard(event.tes,'',''),player,game.createCard(event.mes,'',''));
-					game.log(target,'选择的进攻之策为','#g'+get.translation(event.tes));
-					game.log(player,'选择的防御对策为','#g'+get.translation(event.mes));
+					game.log(target,'选择的策略为','#g'+get.translation(event.tes));
+					game.log(player,'选择的策略为','#g'+get.translation(event.mes));
 					game.delay(0,1500);
 					'step 5'
 					var mes=event.mes.slice(6);
 					var tes=event.tes.slice(6);
 					var str;
 					if(mes==tes){
-						str=get.translation(player)+'对策成功';
+						str=get.translation(player)+event.title+'成功';
 						player.popup('胜','wood');
 						target.popup('负','fire');
 						game.log(player,'#g胜');
 						event.result={bool:true};
 					}
 					else{
-						str=get.translation(player)+'对策失败';
+						str=get.translation(player)+event.title+'失败';
 						target.popup('胜','wood');
 						player.popup('负','fire');
 						game.log(target,'#g胜');
 						event.result={bool:false};
 					}
+					event.result.player=event.mes;
+					event.result.target=event.tes;
 					game.broadcastAll(function(str){
 						var dialog=ui.create.dialog(str);
 						dialog.classList.add('center');
@@ -11280,24 +11296,6 @@
 						}
 					}
 					player.ai.tempIgnore=[];
-					_status.globalHistory.push({
-						cardMove:[],
-						custom:[],
-						useCard:[],
-					});
-					game.countPlayer2(function(current){
-						current.actionHistory.push({useCard:[],respond:[],skipped:[],lose:[],gain:[],sourceDamage:[],damage:[],custom:[],useSkill:[]});
-						current.stat.push({card:{},skill:{}});
-						if(event.parent._roundStart){
-							current.getHistory().isRound=true;
-							current.getStat().isRound=true;
-						}
-					});
-					player.getHistory().isMe=true;
-					player.getStat().isMe=true;
-					if(event.parent._roundStart){
-						game.getGlobalHistory().isRound=true;
-					}
 					if(ui.land&&ui.land.player==player){
 						game.addVideo('destroyLand');
 						ui.land.destroy();
@@ -12466,7 +12464,9 @@
 					if(event.type=='phase'){
 						if(event.isMine()){
 							event.endButton=ui.create.control('结束回合','stayleft',function(){
-								if(_status.event.skill){
+								var evt=_status.event;
+								if(evt.name!='chooseToUse'||evt.type!='phase') return;
+								if(evt.skill){
 									ui.click.cancel();
 								}
 								ui.click.cancel();
@@ -16697,6 +16697,8 @@
 					player.update();
 				},
 				changeHp:function(){
+					//add to GlobalHistory
+					game.getGlobalHistory().changeHp.push(event);
 					//changeHujia moved here
 					if(num<0&&player.hujia>0&&event.getParent().name=='damage'&&!player.hasSkillTag('nohujia')){
 						event.hujia=Math.min(-num,player.hujia);
@@ -22667,12 +22669,14 @@
 						if(this.skills.contains(skill)) return;
 						var info=lib.skill[skill];
 						if(!info) return;
-						if(!nobroadcast){
-							game.broadcast(function(player,skill){
-								player.skills.add(skill);
-							},this,skill);
+						if(!addToSkills){
+							this.skills.add(skill);
+							if(!nobroadcast){
+								game.broadcast(function(player,skill){
+									player.skills.add(skill);
+								},this,skill);
+							}
 						}
-						if(!addToSkills) this.skills.add(skill);
 						this.addSkillTrigger(skill);
 						if(this.awakenedSkills.contains(skill)){
 							this.awakenSkill(skill);
@@ -23023,9 +23027,7 @@
 				},
 				addTempSkill:function(skill,expire,checkConflict){
 					if(this.hasSkill(skill)&&this.tempSkills[skill]==undefined) return;
-					var noremove=this.skills.contains(skill);
-					this.addSkill(skill,checkConflict,true);
-					if(!noremove) this.skills.remove(skill);
+					this.addSkill(skill,checkConflict,true,true);
 
 					if(!expire){
 						expire='phaseAfter';
@@ -23064,16 +23066,6 @@
 						}
 					}
 
-					for(var i in expire){
-						if(typeof expire[i]=='string'){
-							lib.hookmap[expire[i]]=true;
-						}
-						else if(Array.isArray(expire[i])){
-							for(var j=0;j<expire.length;j++){
-								lib.hookmap[expire[i][j]]=true;
-							}
-						}
-					}
 					return skill;
 				},
 				attitudeTo:function(target){
@@ -26478,7 +26470,7 @@
 						allbool=true;
 					};
 					var totalPopulation=game.players.length+game.dead.length+1;
-					var player=start;;
+					var player=start;
 					var globalskill='global_'+name;
 					var map=_status.connectMode?lib.playerOL:game.playerMap;
 					for(var iwhile=0;iwhile<totalPopulation;iwhile++){
@@ -26494,7 +26486,7 @@
 							if(j.indexOf('hidden:')!=0) notemp.addArray(player.additionalSkills[j]);
 						}
 						for(var j in player.tempSkills){
-							if(notemp.contains(j)) return;
+							if(notemp.contains(j)) continue;
 							var expire=player.tempSkills[j];
 							if(expire===name||
 								(Array.isArray(expire)&&expire.contains(name))||
@@ -27001,6 +26993,23 @@
 			group_qun:{fullskin:true},
 			group_key:{fullskin:true},
 			group_jin:{fullskin:true},
+			
+			db_atk1:{
+				type:'db_atk',
+				fullimage:true,
+			},
+			db_atk2:{
+				type:'db_atk',
+				fullimage:true,
+			},
+			db_def1:{
+				type:'db_def',
+				fullimage:true,
+			},
+			db_def2:{
+				type:'db_def',
+				fullimage:true,
+			},
 		},
 		filter:{
 			all:function(){
@@ -28156,8 +28165,9 @@
 					else{
 						player.phaseSkipped=false;
 					}
+					var isRound=false;
 					if(!trigger.skill){
-						var isRound=_status.roundSkipped;
+						isRound=_status.roundSkipped;
 						if(_status.seatNumSettled){
 							var seatNum=player.getSeatNum();
 							if(seatNum!=0){
@@ -28181,6 +28191,25 @@
 							}
 							event.trigger('roundStart');
 						}
+					}
+					_status.globalHistory.push({
+						cardMove:[],
+						custom:[],
+						useCard:[],
+						changeHp:[],
+					});
+					game.countPlayer2(function(current){
+						current.actionHistory.push({useCard:[],respond:[],skipped:[],lose:[],gain:[],sourceDamage:[],damage:[],custom:[],useSkill:[]});
+						current.stat.push({card:{},skill:{}});
+						if(isRound){
+							current.getHistory().isRound=true;
+							current.getStat().isRound=true;
+						}
+					});
+					player.getHistory().isMe=true;
+					player.getStat().isMe=true;
+					if(isRound){
+						game.getGlobalHistory().isRound=true;
 					}
 				},
 			},
@@ -29416,10 +29445,11 @@
 					}
 				},
 				cancel:function(id){
-					if(_status.event._parent_id==id&&_status.event.isMine()&&_status.paused&&_status.imchoosing){
+					if(_status.event._parent_id==id){
 						ui.click.cancel();
 					}
-					if(_status.event.id==id&&_status.event.isMine()&&_status.paused&&_status.imchoosing){
+					if(_status.event.id==id){
+						if(_status.event._backup) ui.click.cancel();
 						ui.click.cancel();
 						if(ui.confirm){
 							ui.confirm.close();
@@ -45135,6 +45165,7 @@
 				var hidden=false;
 				var notouchscroll=false;
 				var forcebutton=false;
+				var noforcebutton=false;
 				var dialog=ui.create.div('.dialog');
 				dialog.contentContainer=ui.create.div('.content-container',dialog);
 				dialog.content=ui.create.div('.content',dialog.contentContainer);
@@ -45149,6 +45180,7 @@
 					else if(arguments[i]=='hidden') hidden=true;
 					else if(arguments[i]=='notouchscroll') notouchscroll=true;
 					else if(arguments[i]=='forcebutton') forcebutton=true;
+					else if(arguments[i]=='noforcebutton') noforcebutton=true;
 					else dialog.add(arguments[i]);
 				}
 				if(!hidden){
@@ -45161,7 +45193,10 @@
 					dialog.contentContainer.style.WebkitOverflowScrolling='touch';
 					dialog.ontouchstart=ui.click.dragtouchdialog;
 				}
-				if(forcebutton){
+				if(noforcebutton){
+					dialog.noforcebutton=true;
+				}
+				else if(forcebutton){
 					dialog.forcebutton=true;
 					dialog.classList.add('forcebutton');
 				}
@@ -49261,7 +49296,7 @@
 					this.classList.add('selected');
 					ui.selected.buttons.add(this);
 				}
-				if(custom.add.button){
+				if(custom&&custom.add&&custom.add.button){
 					custom.add.button();
 				}
 				game.check();
