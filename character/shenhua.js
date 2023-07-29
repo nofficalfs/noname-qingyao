@@ -256,7 +256,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 				},
 				filter:function(event,player,name){
 					if(event.name=='lose'||event.name=='loseAsync') return event.getlx!==false&&event.toStorage==true;
-					if(event.name=='cardGotoSpecial') return !event.notrigger;
+					if(event.name=='cardsGotoSpecial') return !event.notrigger;
 					return true;
 				},
 				direct:true,
@@ -971,7 +971,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 				},
 				subSkill:{
 					'1':{
-						audio:2,
+						audio:'drlt_qianjie',
 						trigger:{
 							player:'linkBegin'
 						},
@@ -1139,6 +1139,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 			"drlt_yongsi":{
 				audio:2,
 				group:["drlt_yongsi_1","drlt_yongsi_2"],
+				locked:true,
 				subSkill:{
 					'1':{
 						audio:"drlt_yongsi",
@@ -1486,7 +1487,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 						},
 						filter:function(event,player,name){
 							if(event.name=='lose'||event.name=='loseAsync') return event.getlx!==false&&event.toStorage==true;
-							if(event.name=='cardGotoSpecial') return !event.notrigger;
+							if(event.name=='cardsGotoSpecial') return !event.notrigger;
 							return true;
 						},
 						direct:true,
@@ -3194,6 +3195,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 				audioname:['re_huangzhong','ol_huangzhong'],
 				trigger:{player:'useCardToTargeted'},
 				logTarget:'target',
+				locked:false,
 				check:function(event,player){
 					return get.attitude(player,event.target)<=0;
 				},
@@ -3655,7 +3657,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 						return;
 					}
 					event.card=result.card;
-					player.chooseBool('是否将'+get.translation(event.card)+'作为【田】置于武将牌上？').ai=function(){
+					player.chooseBool('是否将'+get.translation(event.card)+'作为“田”置于武将牌上？').ai=function(){
 						return true;
 					};
 					'step 2'
@@ -3886,8 +3888,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 				filterTarget:function(card,player,target){
 					return target.hasZhuSkill('zhiba',player)&&player.canCompare(target);
 				},
-				direct:true,
-				clearTime:true,
+				log:false,
 				prepare:function(cards,player,targets){
 					targets[0].logSkill('zhiba');
 				},
@@ -3986,6 +3987,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 					player.draw();
 				},
 				discard:false,
+				lose:false,
 				prepare:function(cards,player,targets){
 					player.$give(cards,targets[0],false);
 				},
@@ -4160,7 +4162,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 			},
 			duanchang:{
 				audio:2,
-				audioname:['re_caiwenji'],
+				audioname:['re_caiwenji','ol_caiwenji'],
 				forbid:['boss'],
 				trigger:{player:'die'},
 				forced:true,
@@ -4276,7 +4278,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 					var bool=false;
 					for(var i=0;i<_status.characterlist.length;i++){
 						var name=_status.characterlist[i];
-						if(name.indexOf('zuoci')!=-1||name.indexOf('key')==0||lib.skill.rehuashen.banned.contains(name)||player.storage.huashen.owned[name]) continue;
+						if(name.indexOf('zuoci')!=-1||lib.skill.rehuashen.banned.contains(name)||player.storage.huashen.owned[name]) continue;
 						var skills=lib.character[name][3];
 						for(var j=0;j<skills.length;j++){
 							var info=lib.skill[skills[j]];
@@ -4493,8 +4495,8 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 							player.markSkill('huashen');
 							game.broadcastAll(function(character,player){
 								player.sex=lib.character[character][0];
-								player.group=lib.character[character][1];
-								player.node.name.dataset.nature=get.groupnature(player.group);
+								//player.group=lib.character[character][1];
+								//player.node.name.dataset.nature=get.groupnature(player.group);
 								var mark=player.marks.huashen;
 								if(mark){
 									mark.style.transition='all 0.3s';
@@ -4512,6 +4514,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 									},200);
 								}
 							},character,player);
+							player.changeGroup(lib.character[character][1],false);
 						}
 						player.storage.huashen.current2=skill;
 						if(!player.additionalSkills.huashen||!player.additionalSkills.huashen.contains(skill)){
@@ -5082,7 +5085,8 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 			},
 			gzyinghun:{
 				audio:'yinghun',
-				audioname:['re_sunjian','sunce','re_sunben','re_sunce','ol_sunjian'],
+				audioname:['re_sunjian','sunce','re_sunben','re_sunce','ol_sunjian','sb_sunce'],
+				audioname2:{re_sunyi:'gzyinghun_re_sunyi'},
 				trigger:{player:'phaseZhunbeiBegin'},
 				filter:function(event,player){
 					return player.getDamagedHp()>0;
@@ -6375,7 +6379,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 				}
 			},
 			jushou:{
-				audio:'jushou_audio',
+				audio:2,
 				trigger:{player:'phaseJieshuBegin'},
 				check:function(event,player){
 					return event.player.hp+player.countCards('h')<4;
@@ -6391,9 +6395,6 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 						}
 					}
 				},
-				subSkill:{
-					audio:{audio:2}
-				}
 			},
 			moon_jushou:{
 				audio:'xinjushou',
@@ -7006,7 +7007,6 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 			},
 			buqu:{
 				audio:2,
-				audioname:['key_yuri'],
 				trigger:{player:'chooseToUseBefore'},
 				forced:true,
 				preHidden:true,
@@ -7356,8 +7356,6 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 				lose:false,
 				delay:false,
 				line:true,
-				direct:true,
-				clearTime:true,
 				prepare:function(cards,player,targets){
 					targets[0].logSkill('huangtian');
 				},
@@ -7531,6 +7529,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 				silent:true,
 				popup:false,
 				firstDo:true,
+				charlotte:true,
 				filter:function(event,player){
 					return event.skill&&(event.skill.indexOf('guhuo_')==0||event.skill.indexOf('xinfu_guhuo_')==0);
 				},
@@ -7733,7 +7732,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 			jiangwei:['ol_jiangwei','re_jiangwei','jiangwei'],
 			liushan:['ol_liushan','re_liushan','liushan'],
 			sunce:['re_sunben','re_sunce','sunce'],
-			zhangzhang:['re_zhangzhang','zhangzhang'],
+			zhangzhang:['ol_zhangzhang','re_zhangzhang','zhangzhang'],
 			zuoci:['re_zuoci','zuoci'],
 			caiwenji:['ol_caiwenji','re_caiwenji','caiwenji'],
 			xuyou:['sp_xuyou','xuyou','yj_xuyou'],
@@ -7742,6 +7741,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 			zhugezhan:['zhugezhan','old_zhugezhan'],
 			ol_lusu:['ol_lusu','re_lusu'],
 			zhanghe:['re_zhanghe','zhanghe'],
+			yl_luzhi:['yl_luzhi','tw_yl_luzhi'],
 		},
 		translate:{
 			re_yuanshao:'袁绍',
@@ -7769,7 +7769,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 			"nzry_jianxiang_info":"当你成为其他角色使用牌的目标时，你可令手牌数最少的一名角色摸一张牌。",
 			"nzry_shenshi1":"审时",
 			"nzry_shenshi":"审时",
-			"nzry_shenshi_info":"转换技，阴：出牌阶段限一次，你可以将一张牌交给一名手牌数最多的角色，然后对其造成一点伤害，若该角色因此死亡，则你可以令一名角色将手牌摸至四张。阳：其他角色对你造成伤害后，你可以观看该角色的手牌，然后交给其一张牌，当前角色回合结束时，若此牌仍在该角色的区域内，你将手牌摸至四张。",
+			"nzry_shenshi_info":"转换技，阴：出牌阶段限一次，你可以将一张牌交给一名除你外手牌数最多的角色，然后对其造成一点伤害，若该角色因此死亡，则你可以令一名角色将手牌摸至四张。阳：其他角色对你造成伤害后，你可以观看该角色的手牌，然后交给其一张牌，当前角色回合结束时，若此牌仍在该角色的区域内，你将手牌摸至四张。",
 			"nzry_mingren":"明任",
 			"nzry_mingren_info":"游戏开始时，你摸两张牌，然后将一张手牌置于你的武将牌上，称为“任”。结束阶段，你可以用一张手牌替换“任”。",
 			"nzry_zhenliang":"贞良",
@@ -7907,7 +7907,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 			retianxiang_info:'当你受到伤害时，你可以弃置一张红桃手牌，防止此次伤害并选择一名其他角色，然后你选择一项：1.令其受到伤害来源对其造成的1点伤害，然后摸X张牌（X为其已损失体力值且至多为5）；2.令其失去1点体力，然后获得你弃置的牌。',
 			xinjiewei_info:'你可以将装备区里的牌当【无懈可击】使用；当你的武将牌从背面翻至正面时，你可以弃置一张牌，然后移动场上的一张牌',
 			xinjushou_info:'结束阶段，你可以翻面并摸四张牌，然后弃置一张手牌，若以此法弃置的是装备牌，则你改为使用之',
-			jixi_info:'出牌阶段，你可以将任意一张【田】当作【顺手牵羊】使用',
+			jixi_info:'出牌阶段，你可以将任意一张“田”当作【顺手牵羊】使用',
 			xinqiangxi_info:'出牌阶段各限一次，你可以选择一项：1. 失去一点体力并对你攻击范围内的一名其他角色造成一点伤害；2. 弃置一张装备牌并对你攻击范围内的一名其他角色造成一点伤害 ',
 			qimou_info:'限定技，出牌阶段，你可以失去任意点体力，然后直到回合结束，你计算与其他角色的距离时-X，且你可以多使用X张【杀】（X为你失去的体力值）',
 			tiaoxin_info:'出牌阶段限一次，你可以指定一名攻击范围内包含你的角色，该角色需对你使用一张【杀】，否则你弃置其一张牌。',
@@ -7916,11 +7916,11 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 			fangquan_info:'你可跳过你的出牌阶段，若如此做，回合结束时，你可以弃置一张手牌并令一名其他角色进行一个额外的回合。',
 			ruoyu_info:'主公技，觉醒技，准备阶段，若你的体力是全场最少的(或之一)，你须增加1点体力上限并回复1点体力，然后获得技能〖激将〗。',
 			qiaobian_info:'你可以弃置一张手牌并跳过自己的一个阶段(准备阶段和结束阶段除外)；若你以此法跳过了摸牌阶段，则你可以获得至多两名其他角色的各一张手牌；若你以此法跳过了出牌阶段，则你可以移动场上的一张牌。',
-			tuntian_info:'当你于回合外失去牌时，你可以进行一次判定。若判定结果不为♥，则你将此牌置于你的武将牌上，称之为【田】。锁定技，你计算与其他角色的距离时-X（X为你武将牌上【田】的数目）',
-			zaoxian_info:'觉醒技，准备阶段，若你武将牌上【田】的数量达到3张或更多，则你减1点体力上限，并获得技能〖急袭〗',
+			tuntian_info:'①当你于回合外失去牌后，你可以判定。若判定结果不为♥，则你将此牌置于你的武将牌上，称为“田”。②你计算与其他角色的距离时-X（X为你武将牌上“田”的数目）',
+			zaoxian_info:'觉醒技，准备阶段，若你武将牌上“田”的数量达到3张或更多，则你减1点体力上限，并获得技能〖急袭〗',
 			jiang_info:'每当你使用（指定目标后）或被使用（成为目标后）一张【决斗】或红色的【杀】时，你可以摸一张牌。',
 			hunzi_info:'觉醒技，准备阶段，若你的体力值为1，你减1点体力上限，并获得技能〖英姿〗和〖英魂〗。',
-			zhiba_info:'主公技，其他吴势力角色的出牌阶段限一次，其可与你进行一次拼点。若该角色没赢，你可以获得双方拼点的牌；你的觉醒技发动后，你可以拒绝此拼点。',
+			zhiba_info:'主公技，其他吴势力角色的出牌阶段限一次，其可与你进行一次拼点。若该角色没赢，你可以获得双方拼点的牌。若你已发动过〖魂姿〗，你可以拒绝此拼点。',
 			zhijian_info:'出牌阶段，你可以将手牌中的一张装备牌置于一名其他角色装备区里（不得替换原装备），然后摸一张牌。',
 			guzheng_info:'其他角色的弃牌阶段结束时，你可以令其获得本阶段内进入弃牌堆的牌中的一张，然后你获得其余的牌。',
 			beige_info:'当有角色受到【杀】造成的伤害后，你可以弃一张牌，并令其进行一次判定，若判定结果为：♥该角色回复1点体力；♦︎该角色摸两张牌；♣伤害来源弃两张牌；♠伤害来源将其武将牌翻面',
@@ -7933,7 +7933,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 			zhanghe:'张郃',
 			dengai:'邓艾',
 			sunce:'孙策',
-			zhangzhang:'张昭张紘',
+			zhangzhang:'张昭张纮',
 			caiwenji:'蔡琰',
 			zuoci:'左慈',
 
@@ -7988,7 +7988,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 			yinghun_old_info:'准备阶段，若你已受伤，则你可以令一名其他角色执行下列两项中的一项： 1.摸X张牌，然后弃一张牌。 2.摸一张牌，然后弃X张牌。 （X为你已损失的体力值）',
 			jiuchi_info:'你可以将一张♠手牌当作【酒】使用。',
 			roulin_info:'锁定技。你对女性角色、女性角色对你使用【杀】时，都需连续使用两张【闪】才能抵消。',
-			benghuai_info:'结束阶段，若你的体力不是全场最少的(或之一)，你须减1点体力或体力上限。',
+			benghuai_info:'锁定技。结束阶段，若你的体力不为全场最少，你失去1点体力或减1点体力上限。',
 			baonue_info:'主公技，其他群雄角色造成伤害后，可进行一次判定，若为♠，你回复1点体力。',
 			luanwu_info:'限定技，出牌阶段，你可令除你外的所有角色依次对与其距离最近的另一名角色使用一张【杀】，否则失去1点体力。',
 			wansha_info:'锁定技，你的回合内，除你以外，不处于濒死状态的角色不能使用【桃】。',

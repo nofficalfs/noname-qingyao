@@ -1,4 +1,5 @@
 window.noname_source_list=[
+	'LICENSE',
 	'card/extra.js',
 	'card/gujian.js',
 	'card/guozhan.js',
@@ -15,6 +16,7 @@ window.noname_source_list=[
 	'card/zhenfa.js',
 	'card/zhulu.js',
 	'character/clan.js',
+	'character/collab.js',
 	'character/diy.js',
 	'character/extra.js',
 	'character/gujian.js',
@@ -51,6 +53,7 @@ window.noname_source_list=[
 	'game/NoSleep.js',
 	'game/package.js',
 	'game/phantom.js',
+	'game/pinyinjs.js',
 	'game/pressure.js',
 	'game/source.js',
 	'game/update.js',

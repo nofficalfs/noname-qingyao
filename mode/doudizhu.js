@@ -160,7 +160,6 @@ game.import('mode',function(lib,game,ui,get,ai,_status){
 				'caochun','maliang','sp_diaochan','quyi','sp_zhaoyun','shamoke',
 				'lijue','liuzan','wenyang','shen_lvmeng','shen_ganning',
 				'jiakui','wangyuanji','lingcao','miheng',
-				'sp_key_yuri','key_hinata','key_rin','key_kyousuke',
 				'ns_chendao','jiakui','haozhao',
 			],
 			addRecord:function(bool){
@@ -1096,8 +1095,8 @@ game.import('mode',function(lib,game,ui,get,ai,_status){
 					}
 					"step 3"
 					for(var i=0;i<game.players.length;i++){
-						_status.characterlist.remove(get.sourceCharacter(game.players[i].name1));
-						_status.characterlist.remove(get.sourceCharacter(game.players[i].name2));
+						_status.characterlist.remove(game.players[i].name1);
+						_status.characterlist.remove(game.players[i].name2);
 					}
 					setTimeout(function(){
 						ui.arena.classList.remove('choose-character');
@@ -1850,7 +1849,13 @@ game.import('mode',function(lib,game,ui,get,ai,_status){
 					else game.updateRoundNumber();
 					return cards;
 				},
-				hasZhuSkill:function(){return false;},
+				hasZhuSkill:function(skill,player){
+					if(!this.hasSkill(skill)) return false;
+					for(var i in this.storage){
+						if(i.indexOf('zhuSkill_')==0&&this.storage[i].contains(skill)) return true;
+					}
+					return false;
+				},
 				$dieAfter:function(){
 					if(_status.video) return;
 					if(!this.node.dieidentity){
@@ -2253,9 +2258,15 @@ game.import('mode',function(lib,game,ui,get,ai,_status){
 				},
 				content:function(){
 					"step 0"
-					player.chooseToDiscard('h',2,'是否发动【飞扬】，弃置两张手牌并弃置自己判定区的一张牌？').set('logSkill','feiyang').ai=function(card){
-						return 6-get.value(card);
-					};
+					player.chooseToDiscard('h',2,get.prompt('feiyang'),'弃置两张手牌，然后弃置判定区里的一张牌').set('logSkill','feiyang').set('ai',function(card){
+						if(_status.event.goon) return 6-get.value(card);
+						return 0;
+					}).set('goon',player.hasCard(function(card){
+						return get.effect(player,{
+							name:card.viewAs||card.name,
+							cards:[card],
+						},player,player)<0;
+					},'j'));
 					"step 1"
 					if(result.bool){
 						player.discardPlayerCard(player,'j',true);
@@ -3028,9 +3039,6 @@ game.import('mode',function(lib,game,ui,get,ai,_status){
 				're_gongsunyuan','guotufengji','dongbai','fuwan','liuxie','sp_machao','tadun','yanbaihu','yuanshu','zhangbao','yl_luzhi','huangfusong','sp_ganning','huangjinleishi',
 				're_panfeng','guosi','sp_liuqi','mangyachang','gaolan','lvkuanglvxiang','xunchen','sp_zhanghe','re_hansui','re_hejin','zhujun','ol_dingyuan','hanfu','wangrong',
 				'dongcheng','gongsunkang','hucheer','sp_sufei','yj_xuhuang','yj_zhanghe','yj_zhangliao','liuyao','wangcan','sp_taishici','caimao','jiling',
-			],
-			key:[
-				'sp_key_yuri','key_akane','key_akiko','key_ao','key_harukakanata','key_haruko','key_hinata','key_kengo','key_komari','key_kotori','key_kyoko','key_nagisa','key_noda','key_rei','key_rin','key_rumi','key_ryoichi','key_sasami','key_shiorimiyuki','key_shiroha','key_shizuku','key_tomoya','key_tsumugi','key_umi','key_yoshino','key_youta','key_yukine','key_nao','key_misuzu',
 			],
 		},
 		online_cardPile:[

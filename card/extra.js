@@ -176,7 +176,7 @@ game.import('card',function(lib,game,ui,get,ai,_status){
 				enable:true,
 				//cardnature:'fire',
 				filterTarget:function(card,player,target){
-					if(player!=game.me&&player.countCards('h')<2) return false;
+					//if(player!=game.me&&player.countCards('h')<2) return false;
 					return target.countCards('h')>0;
 				},
 				content:function(){
@@ -185,11 +185,13 @@ game.import('card',function(lib,game,ui,get,ai,_status){
 						event.finish();
 						return;
 					}
-					target.chooseCard(true).ai=function(card){
+					else if(target.countCards('h')==1) event._result={cards:target.getCards('h')};
+					else target.chooseCard(true).ai=function(card){
 						if(_status.event.getRand()<0.5) return Math.random();
 						return get.value(card);
 					};
 					"step 1"
+					target.showCards(result.cards).setContent(function(){});
 					event.dialog=ui.create.dialog(get.translation(target)+'展示的手牌',result.cards);
 					event.videoId=lib.status.videoId++;
 
@@ -707,7 +709,8 @@ game.import('card',function(lib,game,ui,get,ai,_status){
 				priority:2,
 				firstDo:true,
 				charlotte:true,
-				filter:function(event){
+				filter:function(event,player){
+					if(player.hasSkillTag('jiuSustain',null,event.name)) return false;
 					if(event.name=='useCard') return (event.card&&(event.card.name=='sha'));
 					return true;
 				},

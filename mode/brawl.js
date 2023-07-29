@@ -2255,7 +2255,6 @@ game.import('mode',function(lib,game,ui,get,ai,_status){
 							['re_yuanshao','guotufengji','yj_jushou'],
 							['jin_simayi','jin_simazhao','jin_wangyuanji'],
 						];
-						if(_status.keyVerified) list.push(['key_yuri','key_yuzuru','sp_key_kanade'])
 						list.randomSort();
 						var list2=[];
 						for(var i=0;i<list.length;i++){
@@ -2326,7 +2325,7 @@ game.import('mode',function(lib,game,ui,get,ai,_status){
  						if(group&&map[group]) map[group].push(i);
  					}
  					for(var i in map){
- 						if(map[i].length<8||(i=='key'&&!_status.keyVerified)){
+ 						if(map[i].length<8||(i=='key')){
  							delete map[i];
  						}
  						else{
@@ -3490,11 +3489,6 @@ game.import('mode',function(lib,game,ui,get,ai,_status){
 						['re_lingtong','re_lidian','re_zhangliao','re_ganning'],
 						['re_guanyu','caoren','re_lvmeng','guanping'],
 					].randomGet();
-					if(_status.keyVerified){
-						list=[
-							['caozhen','key_hisako','key_iwasawa','sp_key_kanade'],
-						].randomGet();
-					}
 					if(init){
 						player1=ui.create.player(null,true);
 						player2=ui.create.player(null,true);
@@ -3733,46 +3727,6 @@ game.import('mode',function(lib,game,ui,get,ai,_status){
    					},
    				},
    			];
-   			if(_status.keyVerified) list=[
-   					{
-   					name:'My Song',
-   					place:[false,true,true,false],
-   					character:['caozhen','key_hisako','key_iwasawa','sp_key_kanade'],
-   					lib:{
-   						character:{
-   							caozhen:['male','wei',4,['xinsidi','tuxi']],
-   							key_hisako:['female','key','2/3',['hisako_yinbao','shenzhi','shiorimiyuki_banyin','hisako_zhuanyun'],[]],
-   							key_iwasawa:['female','key','-999/3',['iwasawa_yinhang','iwasawa_mysong','hisako_zhuanyun']],
-   							sp_key_kanade:['female','key',3,['xinwuyan','xinbenxi']],
-   						},
-   						translate:{
-   							caozhen:'突袭教师',
-   							key_hisako:'绝望恶魔',
-   							key_iwasawa:'引吭孤鸦',
-   							sp_key_kanade:'学生会长',
-   						},
-   					},
-   				},
-   				{
-   					name:'Day Game',
-   					place:[false,true,true,false],
-   					character:['key_yuzuru','sp_key_kanade','key_ayato','key_hinata'],
-   					lib:{
-   						character:{
-   							key_yuzuru:['male','key',4,['hinata_qiulve','kurou']],
-   							sp_key_kanade:['female','key',3,['hinata_qiulve','benxi'],[]],
-   							key_ayato:['male','key',3,['hinata_qiulve','retieji']],
-   							key_hinata:['female','key',4,['hinata_qiulve','hinata_ehou']],
-   						},
-   						translate:{
-   							key_yuzuru:'新秀球王',
-   							sp_key_kanade:'学生会长',
-   							key_ayato:'副会长',
-   							key_hinata:'球队领袖',
-   						},
-   					},
-   				},
-   			]
    			game.liangjunduilei=list;
    			game.chooseCharacterTwo=function(){
    				var next=game.createEvent('chooseCharacter',false);
@@ -4093,7 +4047,7 @@ game.import('mode',function(lib,game,ui,get,ai,_status){
 										}
 									}
 								}
-								if(info.linked) target.classList.add('linked');
+								if(info.linked) target.classList.add('linked'+(get.is.linked2(target)?'2':''));
 								if(info.turnedover) target.classList.add('turnedover');
 								if(info.position<_status.firstAct.brawlinfo.position) _status.firstAct=target;
 								var hs=[];

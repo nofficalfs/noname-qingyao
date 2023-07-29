@@ -3,7 +3,6 @@ game.import('mode',function(lib,game,ui,get,ai,_status){
 	return {
 		name:'single',
 		changbanCharacter:[
-			"key_rei","key_yoshino","key_noda","key_nagisa",
 			"re_caocao","re_caozhang","re_diaochan","re_ganning","re_gongsunzan","re_guojia","re_huangyueying","re_lidian","re_lvbu",
 			"re_simayi","sunquan","re_xiahoudun","re_xushu","yuanshu","xf_yiji","re_zhangfei","re_zhangliao","re_xuzhu",
 			"re_zhaoyun","re_zhouyu","re_zhugeliang","ol_xiahouyuan","re_huangzhong","re_weiyan","dianwei","te_yanwen","re_pangde",
@@ -239,6 +238,7 @@ game.import('mode',function(lib,game,ui,get,ai,_status){
 
 			game.gameDraw(game.zhu,function(player){
 				if(_status.mode=='dianjiang') return 4;
+				if(_status.mode=='normal') return player==game.zhu?3:4;
 				if(_status.mode=='changban') return player==game.fan?5:4;
 				if(player.hasSkill('cuorui')){
 					player.logSkill('cuorui');
@@ -361,6 +361,7 @@ game.import('mode',function(lib,game,ui,get,ai,_status){
 						return Math.random();
 					}).set('dialog',event.videoId);
 					"step 5"
+					game.broadcastAll('closeDialog',event.videoId);
 					game.me.next.init(result.links[0]);
 					_status.characterlist.remove(result.links[0]);
 					game.addRecentCharacter(result.links[0]);
@@ -834,7 +835,7 @@ game.import('mode',function(lib,game,ui,get,ai,_status){
 					},source,name,color);
 					game.log(source,'出场');
 
-					var num=source.maxHp;
+					var num=_status.mode == 'normal' ? 4 : source.maxHp;
 					if(player.hasSkill('cuorui')){
 					player.logSkill('cuorui');
 					num=2+_status.characterChoice[player.identity].length;

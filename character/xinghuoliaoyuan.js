@@ -836,21 +836,19 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 					},
 				},
 			},
-			"xinfu_guanwei":{
+			xinfu_guanwei:{
 				audio:2,
 				usable:1,
 				trigger:{
 					global:"phaseUseEnd",
 				},
 				filter:function (event,player){
-					var history=event.player.getHistory('useCard',function(evt){
-						return evt.getParent('phaseUse')==event;
-					});
+					var history=event.player.getHistory('useCard');
 					var num=0;
 					var suit=false;
 					for(var i=0;i<history.length;i++){
 						var suit2=get.suit(history[i].card);
-						if(!suit2) continue;
+						if(!lib.suit.contains(suit2)) return false;
 						if(suit&&suit!=suit2) return false;
 						suit=suit2;
 						num++;
@@ -858,17 +856,21 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 					return num>1;
 				},
 				direct:true,
+				global:'xinfu_guanwei_ai',
 				content:function (){
 					'step 0'
+					var target=trigger.player;
 					player.chooseToDiscard('he',get.prompt('xinfu_guanwei',trigger.player),'弃置一张牌，令其摸两张牌并进行一个额外的出牌阶段。').set('ai',function(card){
-						if(get.attitude(_status.event.player,_status.currentPhase)<1) return 0;
+						if(get.attitude(_status.event.player,_status.event.targetx)<1) return 0;
 						return 9-get.value(card);
-					}).set('logSkill','xinfu_guanwei');
+					}).set('logSkill',['xinfu_guanwei',target]).set('targetx',target);
 					'step 1'
 					if(result.bool){
 						player.line(trigger.player,'green');
 						trigger.player.draw(2);
-					}else{
+					}
+					else{
+						player.storage.counttrigger.xinfu_guanwei--;
 						event.finish();
 					}
 					'step 2'
@@ -879,10 +881,51 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 				ai:{
 					expose:0.5,
 				},
+				subSkill:{
+					ai:{
+						ai:{
+							effect:{
+								player_use:function(card,player,target){
+									if(typeof card!='object'||!player.isPhaseUsing()) return;
+									var hasPanjun=game.hasPlayer(function(current){
+										return current.hasSkill('xinfu_guanwei')&&(!current.storage.counttrigger||!current.storage.counttrigger.xinfu_guanwei)&&
+											get.attitude(current,player)>=1&&current.hasCard(function(card){
+												return get.value(card)<7||(current!=game.me&&!current.isUnderControl()&&!current.isOnline())&&get.value(card)<9;
+											},'he');
+									});
+									if(!hasPanjun) return;
+									var suitx=get.suit(card);
+									var history=player.getHistory('useCard');
+									if(!history.length){
+										var val=0;
+										if(player.hasCard(function(cardx){
+											return get.suit(cardx)==suitx&&card!=cardx&&(!card.cards||!card.cards.contains(cardx))&&player.hasValueTarget(cardx);
+										},'hs')) val=[2,0.1];
+										if(val) return val;
+										return;
+									}
+									var num=0;
+									var suit=false;
+									for(var i=0;i<history.length;i++){
+										var suit2=get.suit(history[i].card);
+										if(!lib.suit.contains(suit2)) return;
+										if(suit&&suit!=suit2) return;
+										suit=suit2;
+										num++;
+									}
+									if(suitx==suit&&num==1) return [1,0.1];
+									if(suitx!=suit&&(num>1||num<=1&&player.hasCard(function(cardx){
+										return get.suit(cardx)==suit&&player.hasValueTarget(cardx);
+									},'hs'))) return 'zeroplayertarget';
+								},
+							},
+						},
+					}
+				},
 			},
 			xinfu_gongqing_gz_panjun:{audio:2},
 			"xinfu_gongqing":{
-				audio:true,
+				audio:2,
 				audioname2:{gz_panjun:'xinfu_gongqing_gz_panjun'},
 				trigger:{
 					player:["damageBegin3","damageBegin4"],
@@ -1257,7 +1300,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 					player:["useCardAfter","respond"],
 				},
 				filter:function (event,player){
-					if(get.itemtype(event.cards)!='cards'||player==_status.currentPhase) return false;
+					if(get.itemtype(event.cards)!='cards') return false;
 					for(var i=0;i<event.cards.length;i++){
 						if(event.cards[i].isInPile()){
 							return true;
@@ -1269,7 +1312,8 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 				content:function (){
 					'step 0'
 					player.chooseTarget(get.prompt2('xinfu_xunxian'),function(card,player,target){
-						return target!=player&&target.countCards('h')>player.countCards('h');
+						if(target==player) return false;
+						return target.countCards('h')>player.countCards('h')||Math.max(0,target.hp)>Math.max(0,player.hp);
 					}).set('ai',function(target){
 						var att=get.attitude(_status.event.player,target);
 						if(att<3) return 0;
@@ -1301,7 +1345,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 				},
 			},
 			"xinfu_kannan":{
-				audio:true,
+				audio:2,
 				subSkill:{
 					phase:{
 						sub:true,
@@ -1483,6 +1527,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 			sp_taishici:['re_sp_taishici','sp_taishici'],
 			mazhong:['mazhong','re_mazhong'],
 			wenpin:['re_wenpin','wenpin'],
+			liuyan:['jsrg_liuyan','ol_liuyan','liuyan'],
 		},
 		translate:{
 			xinghuoliaoyuan:'星火燎原',
@@ -1535,7 +1580,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 			"xinfu_zengdao2":"赠刀",
 			"xinfu_zengdao2_info":"",
 			"xinfu_guanwei":"观微",
-			"xinfu_guanwei_info":"每回合限一次。一名角色的出牌阶段结束时，若其于出牌阶段内使用过两张以上的牌且花色均相同，则你可以弃置一张牌，令其摸两张牌并进行一个额外的出牌阶段。",
+			"xinfu_guanwei_info":"每回合限一次。一名角色的出牌阶段结束时，若其本回合使用过两张以上的牌且这些牌均有花色且花色均相同，则你可以弃置一张牌，令其摸两张牌并进行一个额外的出牌阶段。",
 			"xinfu_gongqing":"公清",
 			"xinfu_gongqing_info":"锁定技。当你受到伤害时，若伤害来源的攻击范围：<3，则你令此伤害的数值减为1。>3，你令此伤害+1。",
 			"xinfu_andong":"安东",
@@ -1553,7 +1598,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 			"xinfu_guanchao":"观潮",
 			"xinfu_guanchao_info":"出牌阶段开始时，你可以选择获得一项效果直到回合结束：1.当你使用牌时，若你此阶段使用过的所有牌的点数为递增，你摸一张牌；2.当你使用牌时，若你此阶段使用过的所有牌的点数为递减，你摸一张牌。",
 			"xinfu_xunxian":"逊贤",
-			"xinfu_xunxian_info":"每名其他角色的回合限一次，当你使用或打出的牌结算完成后，你可以将其对应的所有实体牌交给一名手牌数大于你的角色。",
+			"xinfu_xunxian_info":"每回合限一次。当你使用或打出的牌结算完成后，你可以将其对应的所有实体牌交给一名手牌数或体力值大于你的角色。",
 			"xinfu_kannan":"戡难",
 			"xinfu_kannan_info":"出牌阶段限X次，你可以与一名本回合内未成为过〖戡难〗目标的角色拼点。若你赢，你使用的下一张【杀】的伤害值基数+1，且你本回合内不能再发动〖戡难〗。若你没赢，其使用的下一张【杀】的伤害值基数+1。（X为你的体力值）。",
 			"kannan_eff":"戡难",
@@ -1561,7 +1606,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 			"xinfu_tushe":"图射",
 			"xinfu_tushe_info":"当你使用非装备牌指定目标后，若你没有基本牌，则你可以摸X张牌。（X为此牌指定的目标数）",
 			"xinfu_limu":"立牧",
-			"xinfu_limu_info":"出牌阶段限一次，你可以将一张♦牌当做【乐不思蜀】对自己使用，然后回复1点体力。只要你的判定区内有牌，你对攻击范围内的其他角色使用牌便没有次数和距离限制。",
+			"xinfu_limu_info":"出牌阶段，你可以将一张♦牌当做【乐不思蜀】对自己使用，然后回复1点体力。只要你的判定区内有牌，你对攻击范围内的其他角色使用牌便没有次数和距离限制。",
 			xinyingshi:'应势',
 			xinyingshi_info:'出牌阶段开始时，若场上所有角色的武将牌上均没有“酬”，则你可以将任意张牌置于一名角色的武将牌上，称为“酬”。若如此做：当有角色使用牌对有“酬”的角色造成伤害后，其可以获得一张“酬”，并获得牌堆中所有与“酬”花色点数均相同的牌；有“酬”的角色死亡时，你获得其所有“酬”。',
 		},

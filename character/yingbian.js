@@ -11,7 +11,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 			yangzhi:['female','jin',3,['xinwanyi','maihuo']],
 			yangyan:['female','jin',3,['xinxuanbei','xianwan']],
 			ol_huaxin:['male','wei',3,['caozhao','olxibing']],
-			zhongyan:['female','jin',3,['bolan','yifa']],
+			zhongyan:['female','jin',3,['bolan','yifa'],['clan:颍川钟氏']],
 			weiguan:['male','jin',3,['zhongyun','shenpin']],
 			cheliji:['male','qun',4,['chexuan','qiangshou']],
 			simazhou:['male','jin',4,['recaiwang','naxiang']],
@@ -237,6 +237,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 				filter:function(event,player){
 					return player!=event.target&&event.targets.length==1&&(event.card.name=='sha'||get.type(event.card,false)=='trick')&&event.target.countCards('he')>0;
 				},
+				locked:false,
 				logTarget:'target',
 				check:function(event,player){
 					return get.effect(event.target,{name:'guohe_copy2'},player,player)>0;
@@ -523,6 +524,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 					});
 				},
 				forced:true,
+				locked:false,
 				content:function(){
 					'step 0'
 					var num=0;
@@ -578,6 +580,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 				group:['huaiyuan_init','huaiyuan_die'],
 				subSkill:{
 					init:{
+						audio:'huaiyuan',
 						trigger:{
 							global:'phaseBefore',
 							player:'enterGame',
@@ -819,29 +822,41 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 						audio:'qimei',
 						charlotte:true,
 						forced:true,
+						popup:false,
 						trigger:{global:['equipAfter','addJudgeAfter','gainAfter','loseAsyncAfter','loseAfter','gainAfter','addToExpansionAfter']},
-						logTarget:function(event,player){
-							return player.storage.qimei_draw;
-						},
 						usable:1,
 						filter:function(event,player){
 							var target=player.storage.qimei_draw;
 							if(!target||!target.isIn()) return false;
-							if(event.name!='gain'||(event.player!=player&&event.player!=target)){
-							var evt1=event.getl(player);
-								if(!evt1||!evt1.hs||!evt1.hs.length){
-									var evt2=event.getl(target);
-									if(!evt2||!evt2.hs||!evt2.hs.length) return false;
-								}
-							}
-							return player.countCards('h')==target.countCards('h');
+							if(player.countCards('h')!=target.countCards('h')) return false;
+							var hasChange=function(event,player){
+								var gain=0,lose=0;
+								if(event.getg) gain=event.getg(player).length;
+								if(event.getl) lose=event.getl(player).hs.length;
+								return gain!=lose;
+							};
+							return hasChange(event,player)||hasChange(event,target);
 						},
 						content:function(){
+							'step 0'
 							if(trigger.delay===false) game.delayx();
-							var evt1=trigger.getl(player);
-							if((trigger.name=='gain'&&player==trigger.player)||(evt1&&evt1.hs&&evt1.hs.length)) player.storage.qimei_draw.draw();
-							var evt2=trigger.getl(player.storage.qimei_draw);
-							if((trigger.name=='gain'&&player==player.storage.qimei_draw)||evt2&&evt2.hs&&evt2.hs.length) player.draw();
+							'step 1'
+							var target=player.storage.qimei_draw;
+							player.logSkill('qimei_draw',target);
+							var drawer=[];
+							var hasChange=function(event,player){
+								var gain=0,lose=0;
+								if(event.getg) gain=event.getg(player).length;
+								if(event.getl) lose=event.getl(player).hs.length;
+								return gain!=lose;
+							};
+							if(hasChange(trigger,player)) drawer.push(target);
+							if(hasChange(trigger,target)) drawer.push(player);
+							if(drawer.length==1) drawer[0].draw();
+							else{
+								game.asyncDraw(drawer.sortBySeat());
+								game.delayex();
+							}
 						},
 						group:'qimei_hp',
 						onremove:true,
@@ -1170,7 +1185,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 				},
 				filterCard:()=>false,
 				selectCard:-1,
-				prompt:'将武将牌横置并视为使用【杀】',
+				prompt:'将武将牌重置并视为使用【杀】',
 				log:false,
 				check:()=>1,
 				precontent:function(){
@@ -2557,6 +2572,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 			taoyin:{
 				audio:2,
 				trigger:{player:'showCharacterAfter'},
+				hiddenSkill:true,
 				logTarget:function(){
 					return _status.currentPhase;
 				},
@@ -2633,8 +2649,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 				lose:false,
 				delay:false,
 				line:true,
-				direct:true,
-				clearTime:true,
+				log:false,
 				prepare:function(cards,player,targets){
 					targets[0].logSkill('ruilve');
 				},
@@ -2723,6 +2738,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 				audio:2,
 				trigger:{player:'showCharacterAfter'},
 				forced:true,
+				hiddenSkill:true,
 				filter:function(event,player){
 					return event.toShow&&event.toShow.contains('jin_xiahouhui');
 				},
@@ -2832,6 +2848,8 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 				audio:2,
 				trigger:{player:'showCharacterAfter'},
 				forced:true,
+				locked:false,
+				hiddenSkill:true,
 				filter:function(event,player){
 					var target=_status.currentPhase;
 					return player!=target&&target&&target.isAlive()&&event.toShow&&event.toShow.contains('jin_simazhao');
@@ -2843,6 +2861,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 			tuishi2:{
 				trigger:{global:'phaseEnd'},
 				direct:true,
+				charlotte:true,
 				filter:function(event,player){
 					var target=_status.currentPhase;
 					return target!=player&&target&&target.isAlive()&&game.hasPlayer(function(current){
@@ -3717,7 +3736,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 			xuanbei:'选备',
 			xuanbei_info:'①游戏开始时，你从牌堆中获得两张具有应变标签的牌。②每回合限一次。当你使用的具有应变标签的牌结算结束后，你可将此牌对应的所有实体牌交给一名其他角色。',
 			xianwan:'娴婉',
-			xianwan_info:'①当你需要使用【闪】时，若你的武将牌未横置，则你可以横置武将牌并视为使用【闪】。②当你需要使用【杀】时，若你的武将牌横置，则你可以横置武将牌并视为使用【杀】。',
+			xianwan_info:'①当你需要使用【闪】时，若你的武将牌未横置，则你可以横置武将牌并视为使用【闪】。②当你需要使用【杀】时，若你的武将牌横置，则你可以重置武将牌并视为使用【杀】。',
 			yangzhi:'杨芷',
 			wanyi:'婉嫕',
 			wanyi_info:'每回合每项限一次。出牌阶段，你可以将一张具有应变效果的牌当做【逐近弃远】/【出其不意】/【水淹七军】/【洞烛先机】使用。',
