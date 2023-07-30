@@ -1337,7 +1337,6 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 			dcruyi:'如意',
 			dcruyi_info:'锁定技。①游戏开始时，你将【如意金箍棒】置入装备区。②你手牌区内的武器牌均视为【杀】，且你不是武器牌的合法目标。③当你即将失去【如意金箍棒】或即将废除武器栏时，取消之。④你不能将装备区内的【如意金箍棒】当做其他牌使用或打出。',
 			ruyijingubang:'如意金箍棒',
-			ruyijingubang_skill:'如意',
 			ruyijingubang_skill:'如意金箍棒',
 			ruyijingubang_effect:'如意金箍棒',
 			ruyijingubang_info:'出牌阶段限一次。你可以将此牌的实际攻击范围调整为1~4内的任意整数。你根据此牌的实际攻击范围拥有对应的效果：<br><li>⑴你使用【杀】无次数限制。<br><li>⑵你使用的【杀】伤害+1。<br><li>⑶你使用的【杀】不可被响应。<br><li>⑷你使用【杀】选择目标后，可以增加一个额外目标。',

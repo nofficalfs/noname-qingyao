@@ -3621,7 +3621,7 @@
 					show_extensionimage:{
 						name:'显示扩展武将图片',
 						intro:'关闭扩展武将包仍加载扩展武将图片',
-						init:true,
+						init:false,
 						unfrequent:true,
 					}
 				}
