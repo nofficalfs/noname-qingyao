@@ -713,7 +713,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 				direct:true,
 				onremove:true,
 				filter:function(event,player){
-					return (event.name!='phase'||game.phaseNumber==0);
+					return game.hasPlayer(current=>current!=player)&&(event.name!='phase'||game.phaseNumber==0);
 				},
 				group:['twyanshi_hurt','twyanshi_damage'],
 				content:function(){
@@ -2184,7 +2184,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 				audio:2,
 				trigger:{global:'damageEnd'},
 				filter:function(event,player){
-					return event.player.isAlive()&&get.distance(player,event.player)<=1;
+					return event.player.isIn()&&get.distance(player,event.player)<=1;
 				},
 				logTarget:'player',
 				check:function(event,player){
@@ -4603,7 +4603,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 				trigger:{player:'damageEnd'},
 				logTarget:'source',
 				filter:function(event,player){
-					return event.source&&event.source.isAlive();
+					return event.source&&event.source.isIn();
 				},
 				check:function(event,player){
 					var att=get.attitude(player,event.source);
@@ -4648,7 +4648,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 					if(get.suit(card)!='heart') player.draw();
 					'step 4'
 					var target=trigger.source;
-					if(target.isAlive()&&event.count>0) player.chooseBool(get.prompt('twenyuan',target),lib.skill.twenyuan2.prompt2).set('ai',function(){
+					if(target.isIn()&&event.count>0&&player.hasSkill('twenyuan')) player.chooseBool(get.prompt('twenyuan',target),lib.skill.twenyuan2.prompt2).set('ai',function(){
 						var evt=_status.event.getTrigger();
 						return lib.skill.twenyuan2.check(evt,evt.player);
 					});
@@ -5019,7 +5019,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 					else event.finish();
 					'step 2'
 					game.delayx();
-					if(player.getExpansions('twxingwu').length<3) event.finish();
+					if(player.getExpansions('twxingwu').length<3||!game.hasPlayer(current=>current!=player)) event.finish();
 					'step 3'
 					player.chooseButton(['是否移去三张“星舞”牌并发射核弹？',player.getExpansions('twxingwu')],3).set('ai',function(button){
 						if(_status.event.goon) return 1;
@@ -8252,7 +8252,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 						filter:function(event,player){
 							if(!player.countCards('he')) return false;
 							var evt=player.storage.twgongge_buff2;
-							if(evt.card==event.card&&evt.target.isAlive()&&evt.target.hp>=player.hp) return true;
+							if(evt.card==event.card&&evt.target.isIn()&&evt.target.hp>=player.hp) return true;
 							return false;
 						},
 						direct:true,
@@ -8276,7 +8276,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 						filter:function(event,player){
 							if(!event.card) return false;
 							var evt=player.storage.twgongge_buff3;
-							if(evt.card==event.card&&evt.target.isAlive()&&(event.name=='useCard'||event.player==evt.target)) return true;
+							if(evt.card==event.card&&evt.target.isIn()&&(event.name=='useCard'||event.player==evt.target)) return true;
 							return false;
 						},
 						direct:true,
@@ -8284,7 +8284,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 						content:function(){
 							var evt=player.storage.twgongge_buff3;
 							if(trigger.name=='damage') trigger.num+=evt.num;
-							else if(evt.target.isAlive()) evt.target.recover(evt.num);
+							else if(evt.target.isIn()) evt.target.recover(evt.num);
 						},
 					},
 					buff1_mark:{
@@ -8300,7 +8300,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 				audio:3,
 				trigger:{global:'phaseBefore',player:'enterGame'},
 				filter:function(event,player){
-					return event.name!='phase'||game.phaseNumber==0;
+					return game.hasPlayer(current=>current!=player)&&(event.name!='phase'||game.phaseNumber==0);
 				},
 				forced:true,
 				content:function(){
@@ -10710,7 +10710,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 						};
 					} else event.finish();
 					'step 3'
-					if(result.bool){
+					if(result.bool&&game.hasPlayer(current=>current!=player)){
 						player.chooseTarget('选择一名其他角色，对其造成2点雷电伤害',lib.filter.notMe,true).set('ai',target=>get.damageEffect(target,player,player,'thunder'));
 					}
 					'step 4'
@@ -12503,7 +12503,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 									});
 									if(card) player.gain(card,'gain2');
 								}
-								if(event.count>0) event.goto(1);
+								if(event.count>0&&player.hasSkill('twmiaolve')) event.goto(1);
 							}
 						},
 					},
@@ -12953,7 +12953,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 				charlotte:true,
 				filter:function(event,player){
 					var evt=event.getParent(2);
-					return evt.name=='twrangyi'&&evt.player.isAlive()&&player.countCards('h',function(card){
+					return evt.name=='twrangyi'&&evt.player.isIn()&&player.countCards('h',function(card){
 						return card.hasGaintag('twrangyi');
 					})>0;
 				},
@@ -13294,6 +13294,11 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 				content:function(){
 					'step 0'
 					var choiceList=['令一名其他角色与你各摸一张牌','令自己下个出牌阶段可以多发动一次【外使】'];
+					event.count=0;
+					if(game.hasPlayer(current=>current!=player)){
+						choiceList.shift();
+						event.count++;
+					}
 					if(lib.skill.chijie.filter&&lib.skill.chijie.filter({},player)) choiceList.push('将自己的势力变更为场上存在的一个其他势力');
 					player.chooseControl('cancel2').set('prompt',get.prompt('renshe')).set('choiceList',choiceList).set('ai',function(){
 						if(game.hasPlayer(function(current){
@@ -13306,13 +13311,13 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 					else{
 						event.index=result.index;
 						player.logSkill('renshe');
-						if(event.index==0){
+						if(event.index+event.count==0){
 							player.chooseTarget('请选择一名角色，与其各摸一张牌',lib.filter.notMe,true).ai=function(target){
 								if(target.hasSkillTag('nogain')) return 0.1;
 								return get.attitude(_status.event.player,target);
 							};
 						}
-						else if(result.index==1){
+						else if(result.index+event.count==1){
 							player.storage.waishi++;
 							event.finish();
 						}

@@ -1142,6 +1142,7 @@ window.noname_character_rank={
 		'chentai',
 		'clan_zhongyan',
 		'sb_zhurong',
+		'haopu',
 	],
 	bm:[
 		'diy_xizhenxihong',

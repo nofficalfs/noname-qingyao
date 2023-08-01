@@ -9994,7 +9994,6 @@
 							case 'qun':d++;if(lib.config.banned.contains(i)) sd++;break;
 							case 'jin':g++;if(lib.config.banned.contains(i)) sg++;break;
 							case 'western':e++;if(lib.config.banned.contains(i)) se++;break;
-							case 'key':f++;if(lib.config.banned.contains(i)) sf++;break;
 						}
 					}
 					console.log('魏：'+(a-sa)+'/'+a);
@@ -10467,7 +10466,6 @@
 			qun2:'群雄',
 			shen2:'神明',
 			western2:'西方',
-			key2:'KEY',
 			jin2:'晋朝',
 			double2:'双势力',
 			male:'男',
@@ -12105,6 +12103,7 @@
 					'step 0'
 					event.filter1=function(info){
 						if(info[1].isDead()&&!lib.skill[info[0]].forceDie) return false;
+						if(info[1].isOut()&&!lib.skill[info[0]].forceOut) return false;
 						return lib.filter.filterTrigger(trigger,info[1],event.triggername,info[0]);
 					}
 					event.filter2=function(info2){
@@ -12174,7 +12173,8 @@
 					for(var i=0;i<event.choice.length;i++){
 						controls.push(event.choice[i][0]);
 					}
-					event.current.chooseControl(controls).set('prompt','选择下一个触发的技能').set('forceDie',true).set('arrangeSkill',true);
+					event.current.chooseControl(controls)
+					.set('prompt','选择下一个触发的技能').set('forceDie',true).set('arrangeSkill',true).set('includeOut',true)
 					'step 5'
 					if(result.control){
 						for(var i=0;i<event.doing.list.length;i++){
@@ -12198,6 +12198,7 @@
 				},
 				createTrigger:function(){
 					"step 0"
+					//console.log('triggering: ' + player.name+ ' \'s skill: ' + event.skill+' in ' + event.triggername)
 					if(lib.filter.filterTrigger(trigger,player,event.triggername,event.skill)){
 						var fullskills=game.expandSkills(player.getSkills().concat(lib.skill.global));
 						if(!fullskills.contains(event.skill)){
@@ -12281,6 +12282,7 @@
 							var next=player.chooseBool(str);
 							if(event.frequentSkill) next.set('frequentSkill',event.skill);
 							next.set('forceDie',true);
+							next.set('includeOut',true);
 							next.ai=function(){
 								return !check||check(trigger,player);
 							};
@@ -12365,7 +12367,7 @@
 					next.setContent(info.content);
 					next.skillHidden=event.skillHidden;
 					if(info.forceDie) next.forceDie=true;
-					if(event.skill=='_turnover') next.includeOut=true;
+					if(info.forceOut||event.skill=='_turnover') next.includeOut=true;
 					"step 4"
 					if(player._hookTrigger){
 						for(var i=0;i<player._hookTrigger.length;i++){
@@ -15772,13 +15774,17 @@
 					if(target){
 						event.triggeredTargets1.push(target);
 						var next=game.createEvent('useCardToPlayer',false);
-						if(event.triggeredTargets1.length==1) next.isFirstTarget=true;
+						if(!event.isFirstTarget1){
+							event.isFirstTarget1=true;
+							next.isFirstTarget=true;
+						}
 						next.setContent('emptyEvent');
 						next.targets=targets;
 						next.target=target;
 						next.card=card;
 						next.cards=cards;
 						next.player=player;
+						next.skill=event.skill;
 						next.excluded=event.excluded;
 						next.directHit=event.directHit;
 						next.customArgs=event.customArgs;
@@ -15792,13 +15798,17 @@
 					if(target){
 						event.triggeredTargets2.push(target);
 						var next=game.createEvent('useCardToTarget',false);
-						if(event.triggeredTargets2.length==1) next.isFirstTarget=true;
+						if(!event.isFirstTarget2){
+							event.isFirstTarget2=true;
+							next.isFirstTarget=true;
+						}
 						next.setContent('emptyEvent');
 						next.targets=targets;
 						next.target=target;
 						next.card=card;
 						next.cards=cards;
 						next.player=player;
+						next.skill=event.skill;
 						next.excluded=event.excluded;
 						next.directHit=event.directHit;
 						next.customArgs=event.customArgs;
@@ -15825,13 +15835,17 @@
 					if(target){
 						event.triggeredTargets3.push(target);
 						var next=game.createEvent('useCardToPlayered',false);
-						if(event.triggeredTargets3.length==1) next.isFirstTarget=true;
+						if(!event.isFirstTarget3){
+							event.isFirstTarget3=true;
+							next.isFirstTarget=true;
+						}
 						next.setContent('emptyEvent');
 						next.targets=targets;
 						next.target=target;
 						next.card=card;
 						next.cards=cards;
 						next.player=player;
+						next.skill=event.skill;
 						next.excluded=event.excluded;
 						next.directHit=event.directHit;
 						next.customArgs=event.customArgs;
@@ -15845,13 +15859,17 @@
 					if(target){
 						event.triggeredTargets4.push(target);
 						var next=game.createEvent('useCardToTargeted',false);
-						if(event.triggeredTargets4.length==1) next.isFirstTarget=true;
+						if(!event.isFirstTarget4){
+							event.isFirstTarget4=true;
+							next.isFirstTarget=true;
+						}
 						next.setContent('emptyEvent');
 						next.targets=targets;
 						next.target=target;
 						next.card=card;
 						next.cards=cards;
 						next.player=player;
+						next.skill=event.skill;
 						next.excluded=event.excluded;
 						next.directHit=event.directHit;
 						next.customArgs=event.customArgs;
@@ -15873,6 +15891,7 @@
 						next.card=card;
 						next.cards=cards;
 						next.player=player;
+						next.skill=event.skill;
 						next.type='precard';
 						if(event.forceDie) next.forceDie=true;
 					}
@@ -15883,6 +15902,7 @@
 						next.card=card;
 						next.cards=cards;
 						next.player=player;
+						next.skill=event.skill;
 						next.type='precard';
 						if(event.forceDie) next.forceDie=true;
 					}
@@ -15894,6 +15914,7 @@
 						next.card=card;
 						next.cards=cards;
 						next.player=player;
+						next.skill=event.skill;
 						next.type='precard';
 						next.addedTarget=event.addedTarget;
 						next.addedTargets=event.addedTargets;
@@ -15978,6 +15999,7 @@
 						next.card=card;
 						next.cards=cards;
 						next.player=player;
+						next.skill=event.skill;
 						next.preResult=event.preResult;
 						next.type='postcard';
 						if(event.forceDie) next.forceDie=true;
@@ -16011,6 +16033,7 @@
 					"step 0"
 					var info=get.info(event.skill);
 					if(!info.noForceDie) event.forceDie=true;
+					if(!info.noForceOut) event.includeOut=true;
 					event._skill=event.skill;
 					game.trySkillAudio(event.skill,player);
 					var checkShow=player.checkShow(event.skill);
@@ -16191,6 +16214,7 @@
 						next.cards=cards;
 						next.player=player;
 						if(event.forceDie) next.forceDie=true;
+						if(event.includeOut) next.includeOut=true;
 					}
 					"step 2"
 					if(!event.skill){
@@ -16233,6 +16257,7 @@
 					}
 					next.target=targets[num];
 					if(event.forceDie) next.forceDie=true;
+					if(event.includeOut) next.includeOut=true;
 					if(next.target&&!info.multitarget){
 						if(num==0&&targets.length>1){
 							// var ttt=next.target;
@@ -16268,6 +16293,7 @@
 						next.cards=cards;
 						next.player=player;
 						if(event.forceDie) next.forceDie=true;
+						if(event.includeOut) next.includeOut=true;
 					}
 					"step 4"
 					if(player.getStat().allSkills>200){
@@ -17500,9 +17526,9 @@
 							}
 						}
 						if(_status.characterlist){
-							if(lib.character[player.name]&&player.name.indexOf('gz_shibing')!=0) _status.characterlist.add(player.name);
-							if(lib.character[player.name1]&&player.name1.indexOf('gz_shibing')!=0) _status.characterlist.add(player.name1);
-							if(lib.character[player.name2]&&player.name2.indexOf('gz_shibing')!=0) _status.characterlist.add(player.name2);
+							if(lib.character[player.name]&&player.name.indexOf('gz_shibing')!=0&&player.name.indexOf('gz_jun_')!=0) _status.characterlist.add(player.name);
+							if(lib.character[player.name1]&&player.name1.indexOf('gz_shibing')!=0&&player.name1.indexOf('gz_jun_')!=0) _status.characterlist.add(player.name1);
+							if(lib.character[player.name2]&&player.name2.indexOf('gz_shibing')!=0&&player.name2.indexOf('gz_jun_')!=0) _status.characterlist.add(player.name2);
 						}
 						event.cards=player.getCards('hejsx');
 						if(event.cards.length){
@@ -22383,6 +22409,7 @@
 					}
 					if(!name) return false;
 					if(this.hasJudge(name)) return false;
+					if(this.isOut()) return false;
 					var mod=game.checkMod(card,this,this,'unchanged','targetEnabled',this);
 					if(mod!='unchanged') return mod;
 					return true;
@@ -22727,6 +22754,7 @@
 						var next=game.createEvent('logSkill',false),evt=_status.event;
 						next.player=player;
 						next.forceDie=true;
+						next.includeOut=true;
 						evt.next.remove(next);
 						if(evt.logSkill) evt=evt.getParent();
 						for(var i in logInfo){
@@ -22741,6 +22769,7 @@
 						var next2=game.createEvent('logSkillBegin',false);
 						next2.player=player;
 						next2.forceDie=true;
+						next2.includeOut=true;
 						for(var i in logInfo){
 							if(i=='event') next2.log_event=logInfo[i];
 							else next2[i]=logInfo[i];
@@ -23096,6 +23125,7 @@
 							if(lib.skill[name]&&lib.skill[name].markimage){
 								node.setBackgroundImage(lib.skill[name].markimage);
 								node.style['box-shadow']='none';
+								node.style['background-size']='contain';
 							}
 							else{
 								var str=lib.translate[name+'_bg'];
@@ -24662,11 +24692,8 @@
 					return false;
 				},
 				canEquip:function(name,replace){
-					if(get.type(name)=='card'){
-						name=get.equiptype(name);
-					}
 					var range=get.subtype(name);
-					if(this.isDisabled(range)) return false;
+					if(!range||this.isDisabled(range)) return false;
 					if(['equip3','equip4'].contains(range)&&this.getEquip(6)) return false;
 					if(!replace&&!this.isEmpty(range)) return false;
 					return true;
@@ -27167,7 +27194,7 @@
 						}
 					}
 					if(!start) return;
-					if(!game.players.contains(start)){
+					if(!game.players.contains(start)&&!game.dead.contains(start)){
 						start=game.findNext(start);
 					}
 					var list=[];
@@ -28224,7 +28251,6 @@
 					if(group=='wu') return 2;
 					if(group=='qun') return 3;
 					if(group=='jin') return 4;
-					if(group=='key') return 5;
 					if(group=='western') return 6;
 					return 7;
 				}
@@ -29188,6 +29214,7 @@
 			_turnover:{
 				trigger:{player:'phaseBefore'},
 				forced:true,
+				forceOut:true,
 				priority:100,
 				popup:false,
 				firstDo:true,
@@ -29233,14 +29260,16 @@
 						useCard:[],
 						changeHp:[],
 					});
-					game.countPlayer2(function(current){
+					var players=game.players.slice(0).concat(game.dead);
+					for(var i=0;i<players.length;i++){
+						var current=players[i];
 						current.actionHistory.push({useCard:[],respond:[],skipped:[],lose:[],gain:[],sourceDamage:[],damage:[],custom:[],useSkill:[]});
 						current.stat.push({card:{},skill:{}});
 						if(isRound){
 							current.getHistory().isRound=true;
 							current.getStat().isRound=true;
 						}
-					});
+					};
 					player.getHistory().isMe=true;
 					player.getStat().isMe=true;
 					if(isRound){
@@ -30604,7 +30633,6 @@
 			wu:'wood',
 			qun:'metal',
 			western:'thunder',
-			key:'key',
 			jin:'thunder',
 			ye:'thunder',
 		},
@@ -34060,15 +34088,17 @@
 			}
 		},
 		createTrigger:function(name,skill,player,event){
-			if((player.isOut()||player.removed)&&skill!='_turnover') return;
-			if(player.isDead()&&!lib.skill[skill].forceDie) return;
+			var info=get.info(skill);
+			if(!info) return false;
+			if((player.isOut()||player.removed)&&!info.forceOut) return;
+			if(player.isDead()&&!info.forceDie) return;
 			var next=game.createEvent('trigger',false);
 			next.skill=skill;
 			next.player=player;
 			next.triggername=name;
 			next.forceDie=true;
+			next.includeOut=true;
 			next._trigger=event;
-			if(skill=='_turnover') next.includeOut=true;
 			next.setContent('createTrigger');
 		},
 		createEvent:function(name,trigger,triggerevent){
@@ -38033,28 +38063,28 @@
 				}
 			}
 		},
-		hasPlayer:function(func){
+		hasPlayer:function(func,includeOut){
 			for(var i=0;i<game.players.length;i++){
-				if(game.players[i].isOut()) continue;
+				if(!includeOut&&game.players[i].isOut()) continue;
 				if(func(game.players[i])) return true;
 			}
 			return false;
 		},
-		hasPlayer2:function(func){
+		hasPlayer2:function(func,includeOut){
 			var players=game.players.slice(0).concat(game.dead);
 			for(var i=0;i<players.length;i++){
-				if(players[i].isOut()) continue;
+				if(!includeOut&&players[i].isOut()) continue;
 				if(func(players[i])) return true;
 			}
 			return false;
 		},
-		countPlayer:function(func){
+		countPlayer:function(func,includeOut){
 			var num=0;
 			if(typeof func!='function'){
 				func=lib.filter.all;
 			}
 			for(var i=0;i<game.players.length;i++){
-				if(game.players[i].isOut()) continue;
+				if(!includeOut&&game.players[i].isOut()) continue;
 				var result=func(game.players[i]);
 				if(typeof result=='number'){
 					num+=result;
@@ -38065,14 +38095,14 @@
 			}
 			return num;
 		},
-		countPlayer2:function(func){
+		countPlayer2:function(func,includeOut){
 			var num=0;
 			if(typeof func!='function'){
 				func=lib.filter.all;
 			}
 			var players=game.players.slice(0).concat(game.dead);
 			for(var i=0;i<players.length;i++){
-				if(players[i].isOut()) continue;
+				if(!includeOut&&players[i].isOut()) continue;
 				var result=func(players[i]);
 				if(typeof result=='number'){
 					num+=result;
@@ -38083,7 +38113,7 @@
 			}
 			return num;
 		},
-		filterPlayer:function(func,list){
+		filterPlayer:function(func,list,includeOut){
 			if(!Array.isArray(list)){
 				list=[];
 			}
@@ -38091,14 +38121,14 @@
 				func=lib.filter.all;
 			}
 			for(var i=0;i<game.players.length;i++){
-				if(game.players[i].isOut()) continue;
+				if(!includeOut&&game.players[i].isOut()) continue;
 				if(func(game.players[i])){
 					list.add(game.players[i]);
 				}
 			}
 			return list;
 		},
-		filterPlayer2:function(func,list){
+		filterPlayer2:function(func,list,includeOut){
 			if(!Array.isArray(list)){
 				list=[];
 			}
@@ -38107,26 +38137,26 @@
 			}
 			var players=game.players.slice(0).concat(game.dead);
 			for(var i=0;i<players.length;i++){
-				if(players[i].isOut()) continue;
+				if(!includeOut&&players[i].isOut()) continue;
 				if(func(players[i])){
 					list.add(players[i]);
 				}
 			}
 			return list;
 		},
-		findPlayer:function(func){
+		findPlayer:function(func,includeOut){
 			for(var i=0;i<game.players.length;i++){
-				if(game.players[i].isOut()) continue;
+				if(!includeOut&&game.players[i].isOut()) continue;
 				if(func(game.players[i])){
 					return game.players[i];
 				}
 			}
 			return null;
 		},
-		findPlayer2:function(func){
+		findPlayer2:function(func,includeOut){
 			var players=game.players.slice(0).concat(game.dead);
 			for(var i=0;i<players.length;i++){
-				if(players[i].isOut()) continue;
+				if(!includeOut&&players[i].isOut()) continue;
 				if(func(players[i])){
 					return players[i];
 				}
@@ -40450,7 +40480,6 @@
 							if(group=='wu') return 2;
 							if(group=='qun') return 3;
 							if(group=='jin') return 4;
-							if(group=='key') return 5;
 							if(group=='western') return 6;
 							return 7;
 						}
@@ -44979,6 +45008,10 @@
 						var logs=[];
 						var logindex=-1;
 						var cheat=lib.cheat;
+						//使用正则匹配绝大多数的普通obj对象，避免解析成代码块。
+						var reg=/^\{([^{}]+:\s*([^\s,]*|'[^']*'|"[^"]*"|\{[^}]*\}|\[[^\]]*\]|null|undefined|([a-zA-Z$_][a-zA-Z0-9$_]*\s*:\s*)?[a-zA-Z$_][a-zA-Z0-9$_]*\(\)))(?:,\s*([^{}]+:\s*(?:[^\s,]*|'[^']*'|"[^"]*"|\{[^}]*\}|\[[^\]]*\]|null|undefined|([a-zA-Z$_][a-zA-Z0-9$_]*\s*:\s*)?[a-zA-Z$_][a-zA-Z0-9$_]*\(\))))*\}$/;
+						//使用new Function隔绝作用域，避免在控制台可以直接访问到runCommand等变量
+						var fun=(new Function('reg','value','_status','lib','game','ui','get','ai',`"use strict";\nreturn eval(reg.test(value)?('('+value+')'):value)`));
 						var runCommand=function(e){
 							if(text2.value&&!['up','down'].contains(text2.value)){
 								logindex=-1;
@@ -45013,7 +45046,9 @@
 							else{
 								if(!game.observe&&!game.online){
 									try{
-										var result=eval(text2.value);
+										var value=text2.value.trim();
+										if(value.endsWith(";")) value=value.slice(0,-1).trim();
+										var result=fun(reg,value,_status,lib,game,ui,get,ai);
 										game.print(result);
 									}
 									catch(e){
@@ -45048,14 +45083,16 @@
 						game.print=function(){
 							var args=[].slice.call(arguments);
 							var printResult=args.map(arg=>{
-								if(get.is.object(arg)){
+								if(get.is.object(arg)||typeof arg=='function'){
 									var argi=get.stringify(arg);
-									if(argi&&argi.length<5000){
-										textstr+=argi;
+									if(argi/*&&argi.length<5000*/){
+										return argi.replace(/&/g, '&amp;')
+											.replace(/</g, '&lt;')
+											.replace(/>/g, '&gt;')
+											.replace(/"/g, '&quot;')
+											.replace(/'/g, '&#39;');
 									}
-									else{
-										textstr+=arg.toString();
-									}
+									else return arg.toString();
 								}else{
 									var str=String(arg);
 									if (!/<[a-zA-Z]+[^>]*?\/?>.*?(?=<\/[a-zA-Z]+[^>]*?>|$)/.exec(str)) return String(arg)
@@ -45460,7 +45497,7 @@
 				},true,true);
 			},
 			groupControl:function(dialog){
-				return ui.create.control('wei','shu','wu','qun','jin','western','key',function(link,node){
+				return ui.create.control('wei','shu','wu','qun','jin','western',function(link,node){
 					if(link=='全部'){
 						dialog.currentcapt='';
 						dialog.currentgroup='';
@@ -45903,14 +45940,10 @@
 						if(lib.character[i][1]=='ye'){
 							bool5=true;
 						}
-						if(bool3||lib.character[i][1]=='key'){
-							bool2=true;
-						}
 						if(!bool4&&get.is.double(i)) bool4=true;
-						if(bool1&&bool2&&bool4) break;
+						if(bool1&&bool2&&bool4&&bool5) break;
 					}
 					if(bool1) groups.add('shen');
-					if(bool2&&!bool3) groups.add('key');
 					if(bool4) groups.add('double');
 					if(bool5) groups.add('ye');
 					var natures=['water','soil','wood','metal'];
@@ -46139,7 +46172,6 @@
 						if(group=='wu') return 2;
 						if(group=='qun') return 3;
 						if(group=='jin') return 4;
-						if(group=='key') return 5;
 						if(group=='western') return 6;
 						return 7;
 					}
@@ -55988,7 +56020,7 @@
 			}
 		},
 		groups:function(){
-			return ['wei','shu','wu','qun','jin','western','key'];
+			return ['wei','shu','wu','qun','jin','western'];
 		},
 		types:function(){
 			var types=[];

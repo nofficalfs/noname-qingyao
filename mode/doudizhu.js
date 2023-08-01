@@ -1896,7 +1896,7 @@ game.import('mode',function(lib,game,ui,get,ai,_status){
 					if(_status.mode=='binglin'||_status.mode=='online'||this.identity!='fan') return;
 					var player=this,target=game.findPlayer(function(current){
 						return current!=player&&current.identity=='fan';
-					});
+					},true);
 					if(target){
 						target.showGiveup();
 						target.chooseDrawRecover(2);
@@ -3039,6 +3039,9 @@ game.import('mode',function(lib,game,ui,get,ai,_status){
 				're_gongsunyuan','guotufengji','dongbai','fuwan','liuxie','sp_machao','tadun','yanbaihu','yuanshu','zhangbao','yl_luzhi','huangfusong','sp_ganning','huangjinleishi',
 				're_panfeng','guosi','sp_liuqi','mangyachang','gaolan','lvkuanglvxiang','xunchen','sp_zhanghe','re_hansui','re_hejin','zhujun','ol_dingyuan','hanfu','wangrong',
 				'dongcheng','gongsunkang','hucheer','sp_sufei','yj_xuhuang','yj_zhanghe','yj_zhangliao','liuyao','wangcan','sp_taishici','caimao','jiling',
+			],
+			key:[
+				'sp_key_yuri','key_akane','key_akiko','key_ao','key_harukakanata','key_haruko','key_hinata','key_kengo','key_komari','key_kotori','key_kyoko','key_nagisa','key_noda','key_rei','key_rin','key_rumi','key_ryoichi','key_sasami','key_shiorimiyuki','key_shiroha','key_shizuku','key_tomoya','key_tsumugi','key_umi','key_yoshino','key_youta','key_yukine','key_nao','key_misuzu',
 			],
 		},
 		online_cardPile:[

@@ -29,7 +29,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 
 			sp_zhugeliang:['male','shu',3,['huoji','bazhen','kanpo']],
 			pangtong:['male','shu',3,['lianhuan','oldniepan']],
-			xunyu:['male','wei',3,['quhu','jieming']],
+			xunyu:['male','wei',3,['quhu','jieming'],['clan:颍川荀氏']],
 			dianwei:['male','wei',4,['qiangxix']],
 			taishici:['male','wu',4,['tianyi']],
 			yanwen:['male','qun',4,['shuangxiong']],
@@ -2489,7 +2489,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 							player.give(cards,target);
 							target.damage('nocard');
 							'step 1'
-							if(!target.isAlive()){
+							if(!target.isIn()){
 								player.chooseTarget('令一名角色将手牌摸至四张',function(card,player,target){
 									return target.countCards('h')<4;
 								}).set('ai',function(target){
@@ -3176,7 +3176,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 					'step 2'
 					if(result.control!='cancel2'){
 						event.num--;
-						if(event.num>0){
+						if(event.num>0&&player.hasSkill('xinkuanggu')){
 							event.goto(1);
 						}
 					}
@@ -4121,7 +4121,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 				trigger:{global:'damageEnd'},
 				filter:function(event,player){
 					return (event.card&&event.card.name=='sha'&&event.source&&
-						event.player.classList.contains('dead')==false&&player.countCards('he'));
+						event.player.isIn()&&player.countCards('he'));
 				},
 				direct:true,
 				checkx:function(event,player){
@@ -4255,24 +4255,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 				addHuashen:function(player){
 					if(!player.storage.huashen) return;
 					if(!_status.characterlist){
-						if(_status.connectMode) var list=get.charactersOL();
-						else{
-							var list=[];
-							for(var i in lib.character){
-								if(lib.filter.characterDisabled2(i)||lib.filter.characterDisabled(i)) continue;
-								list.push(i);
-							}
-						}
-						game.countPlayer(function(current){
-							list.remove(current.name);
-							list.remove(current.name1);
-							list.remove(current.name2);
-							if(current.storage.huashen&&current.storage.huashen.owned){
-								for(var i in current.storage.huashen.owned) list.removeArray(current.storage.huashen.owned[i]);
-							}
-							if(current.storage.rehuashen&&current.storage.rehuashen.character) list.removeArray(current.storage.rehuashen.character)
-						});
-						_status.characterlist=list;
+						lib.skill.pingjian.initList();
 					}
 					_status.characterlist.randomSort();
 					var bool=false;
@@ -4514,7 +4497,8 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 									},200);
 								}
 							},character,player);
-							player.changeGroup(lib.character[character][1],false);
+							game.log(player,'将性别变为了','#y'+get.translation(lib.character[character][0])+'性');
+							player.changeGroup(lib.character[character][1]);
 						}
 						player.storage.huashen.current2=skill;
 						if(!player.additionalSkills.huashen||!player.additionalSkills.huashen.contains(skill)){
@@ -4544,7 +4528,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 					if(--event.num>0) player.chooseBool(get.prompt2('xinsheng')).set('frequentSkill','xinsheng');
 					else event.finish();
 					'step 3'
-					if(result.bool){
+					if(result.bool&&player.hasSkill('xinsheng')){
 						player.logSkill('xinsheng');
 						event.goto(1);
 					}
@@ -4686,7 +4670,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 				filter:function(event,player){
 					if(event._notrigger.contains(event.player)) return false;
 					return (event.card&&event.card.name=='sha'&&event.getParent().name=='sha'&&
-						event.player.isAlive()&&
+						event.player.isIn()&&
 						player.canCompare(event.player));
 				},
 				check:function(event,player){
@@ -5371,13 +5355,13 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 				mod:{
 					cardSavable:function(card,player){
 						if(!_status.currentPhase) return;
-						if(_status.currentPhase.isAlive()&&_status.currentPhase.hasSkill('wansha')&&_status.currentPhase!=player){
+						if(_status.currentPhase.isIn()&&_status.currentPhase.hasSkill('wansha')&&_status.currentPhase!=player){
 							if(card.name=='tao'&&!player.isDying()) return false;
 						}
 					},
 					cardEnabled:function(card,player){
 						if(!_status.currentPhase) return;
-						if(_status.currentPhase.isAlive()&&_status.currentPhase.hasSkill('wansha')&&_status.currentPhase!=player){
+						if(_status.currentPhase.isIn()&&_status.currentPhase.hasSkill('wansha')&&_status.currentPhase!=player){
 							if(card.name=='tao'&&!player.isDying()) return false;
 						}
 					}
@@ -5779,7 +5763,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 						for(var i=0;i<result.targets.length;i++){
 							result.targets[i].drawTo(Math.min(5,result.targets[i].maxHp));
 						}
-						if(event.count) event.goto(1);
+						if(event.count&&player.hasSkill('jieming')) event.goto(1);
 					}
 				},
 				ai:{
@@ -7149,7 +7133,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 					global:"phaseJieshuBegin",
 				},
 				filter:function(event,player){
-					if(event.player.countCards('h')==0&&event.player.isAlive()) return true;
+					if(event.player.countCards('h')==0&&event.player.isIn()) return true;
 					return false;
 				},
 				preHidden:true,
@@ -8105,7 +8089,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 			jushou_info:'结束阶段，你可以摸3张牌，并将武将牌翻面。',
 			moon_jushou_info:'结束阶段，你可以摸一张牌，并将武将牌翻面。',
 			liegong_info:'当你使用【杀】时，若目标的手牌数大于等于你的体力值，或小于等于你的攻击范围，你可令此【杀】不能被响应。',
-			kuanggu_info:'锁定技，当你造成一点伤害后，若受伤角色与你的距离不大于1，你回复一点体力。',
+			kuanggu_info:'锁定技，当你造成伤害后，若受伤角色与你的距离不大于1，你回复X点体力（X为伤害值）。',
 			tianxiang_info:'当你即将受到伤害时，你可以弃置一张♥手牌，将伤害转移给一名其他角色，然后该角色摸X张牌（X为其已损失的体力值）。',
 			hongyan_info:'锁定技，你区域内的黑桃牌和黑桃判定牌均视为红桃。',
 			buqu_info:'锁定技，当你处于濒死状态时，你亮出牌堆顶的一张牌并置于你的武将牌上，称之为“创”。若此牌的点数与你武将牌上已有的“创”点数均不同，则你回复至1体力。若点数相同，则将此牌置入弃牌堆。只要你的武将牌上有“创”，你的手牌上限便与“创”的数量相等。',
