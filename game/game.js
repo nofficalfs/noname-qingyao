@@ -34,6 +34,7 @@
 		prehidden_skills:[],
 	};
 	var lib={
+        nonameDecade: true,
 		configprefix:'noname_0.9_',
 		versionOL:27,
 		updateURLS:{
@@ -89,7 +90,7 @@
 		hook:{globaltrigger:{},globalskill:{}},
 		hookmap:{},
 		imported:{},
-		layoutfixed:['chess','tafang','stone'],
+		layoutfixed:['chess'],
 		pinyins:{
 			metadata:{
 				shengmu:['zh','ch','sh','b','p','m','f','d','t','l','n','g','k','h','j','q','x','r','z','c','s','y','w'],
@@ -27802,6 +27803,11 @@
 			all:function(){
 				return true;
 			},
+			canBeReplaced:function(card,player){
+				var mod=game.checkMod(card,player,'unchanged','canBeReplaced',player);
+				if(mod!='unchanged') return mod;
+				return true;
+			},
 			buttonIncluded:function(button){
 				return !(_status.event.excludeButton&&_status.event.excludeButton.contains(button));
 			},
@@ -27946,19 +27952,19 @@
 				if(player==undefined) player=_status.event.player;
 				if(!player) return false;
 				if(get.itemtype(card)=='card'){
-					var mod2=game.checkMod(card,player,'unchanged','cardEnabled2',player);
+					var mod2=game.checkMod(card,player,event,'unchanged','cardEnabled2',player);
 					if(mod2!='unchanged') return mod2;
 				}
 				card=get.autoViewAs(card,null,player);
 				if(event==='forceEnable'){
-					var mod=game.checkMod(card,player,'unchanged','cardEnabled',player);
+					var mod=game.checkMod(card,player,event,'unchanged','cardEnabled',player);
 					if(mod!='unchanged') return mod;
 					return true;
 				}
 				else{
 					var filter=get.info(card).enable;
 					if(!filter) return;
-					var mod=game.checkMod(card,player,'unchanged','cardEnabled',player);
+					var mod=game.checkMod(card,player,event,'unchanged','cardEnabled',player);
 					if(mod!='unchanged') return mod;
 					if(typeof filter=='boolean') return filter;
 					if(typeof filter=='function') return filter(card,player,event);
@@ -27975,7 +27981,7 @@
 				}
 				if(player==undefined) player=_status.event.player;
 				if(get.itemtype(card)=='card'){
-					var mod2=game.checkMod(card,player,'unchanged','cardEnabled2',player);
+					var mod2=game.checkMod(card,player,event,'unchanged','cardEnabled2',player);
 					if(mod2!='unchanged') return mod2;
 				}
 				var mod=game.checkMod(card,player,'unchanged','cardRespondable',player);
@@ -28012,7 +28018,9 @@
 				var num=info.usable;
 				if(typeof num=='function') num=num(card,player);
 				num=game.checkMod(card,player,num,'cardUsable',player);
-				if(typeof num!='number') return true;
+				if(typeof num!='number'){
+					return (typeof num=='boolean')?num:true;
+				}
 				if(player.countUsed(card)<num) return true;
 				if(game.hasPlayer(function(current){
 					return game.checkMod(card,player,current,false,'cardUsableTarget',player);
@@ -28076,7 +28084,7 @@
 					if(!lib.filter.cardUsable2(card,player)&&!game.checkMod(card,player,target,false,'cardUsableTarget',player)) return false;
 				}
 				var info=get.info(card);
-				if(info.singleCard&&info.filterAddedTarget&&ui.selected.targets.length) return info.filterAddedTarget(card,player,target,ui.selected.targets[ui.selected.targets.length-1]);
+				if(info.singleCard&&info.filterAddedTarget&&ui.selected.targets.length) return Boolean(info.filterAddedTarget(card,player,target,ui.selected.targets[ui.selected.targets.length-1]));
 				return lib.filter.targetEnabled.apply(this,arguments);
 			},
 			targetEnabled:function(card,player,target){
@@ -28085,12 +28093,12 @@
 				var filter=info.filterTarget;
 				if(!info.singleCard||ui.selected.targets.length==0){
 					var mod=game.checkMod(card,player,target,'unchanged','playerEnabled',player);
-					if(mod==false) return false;
+					if(mod!='unchanged') return mod;
 					var mod=game.checkMod(card,player,target,'unchanged','targetEnabled',target);
 					if(mod!='unchanged') return mod;
 				}
 				if(typeof filter=='boolean') return filter;
-				if(typeof filter=='function') return filter(card,player,target);
+				if(typeof filter=='function') return Boolean(filter(card,player,target));
 			},
 			targetEnabled2:function(card,player,target){
 				if(lib.filter.targetEnabled(card,player,target)) return true;
@@ -28101,7 +28109,7 @@
 
 				var filter=get.info(card).modTarget;
 				if(typeof filter=='boolean') return filter;
-				if(typeof filter=='function') return filter(card,player,target);
+				if(typeof filter=='function') return Boolean(filter(card,player,target));
 				return false;
 			},
 			targetEnabled3:function(card,player,target){
@@ -28227,7 +28235,7 @@
 					}
 					if(lib.config.wuxie_self){
 						var tw=event.info_map;
-						if(tw.player&&tw.player.isUnderControl(true)&&!tw.player.hasSkillTag('noautowuxie')&&
+						if(tw&&tw.player&&tw.player.isUnderControl(true)&&!tw.player.hasSkillTag('noautowuxie')&&
 							(!tw.targets||tw.targets.length<=1)&&!tw.noai){
 							return true;
 						}
@@ -37094,25 +37102,20 @@
 			}
 		},
 		checkMod:function(){
-			var name=arguments[arguments.length-2];
-			var skills=arguments[arguments.length-1];
-			if(skills.getSkills){
-				if(name!='cardname') skills=skills.getSkills();
-				else skills=skills.getSkills(null,false);
-			}
+			const argumentArray=Array.from(arguments),name=argumentArray[argumentArray.length-2];
+			let skills=argumentArray[argumentArray.length-1];
+			if(skills.getSkills) skills=skills.getSkills();
 			skills=skills.concat(lib.skill.global);
 			game.expandSkills(skills);
-			var arg=[],i,info;
-			for(i=0;i<arguments.length-2;i++){
-				arg.push(arguments[i]);
-			}
-			for(i=0;i<skills.length;i++){
-				info=get.info(skills[i]);
-				if(info&&info.mod&&info.mod[name]){
-					var result=info.mod[name].apply(this,arg);
-					if(typeof arg[arg.length-1]!='object'&&result!=undefined) arg[arg.length-1]=result;
-				}
-			}
+			skills=skills.filter(skill=>{
+				const info=get.info(skill);
+				return (info&&info.mod&&info.mod[name]);
+			})
+			const arg=argumentArray.slice(0,-2);
+			skills.forEach(value=>{
+				const result=get.info(value).mod[name].apply(this,arg);
+				if(typeof arg[arg.length-1]!='object'&&result!=undefined) arg[arg.length-1]=result;
+			});
 			return arg[arg.length-1];
 		},
 		prepareArena:function(num){

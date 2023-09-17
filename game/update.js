@@ -1,16 +1,18 @@
 window.noname_update={
-	version:'1.9.124',
-	update:'1.9.123',
+	version:'1.10.1α',
+	update:'1.9.124',
 	changeLog:[
-		'整合@copcap @lieren2023 @mengxinzxz @shijian的Pull Request',
-		'与三国杀diy吧合作推出《3D精选》武将包',
-		'OL族王允、族钟琰、郝普、孟达',
-		'十周年陈泰、孙寒华、王濬、桓范、牵招、界曹冲、张楚',
-		'移动版十常侍、谋孟获、谋祝融',
+		'OL族钟会，族钟毓，族王浑，文钦，段颎',
+		'十周年杜预，郤正，孙翎鸾，周不疑，乐綝，董绾，裴元绍',
+		'手杀郭女王，界张嶷',
+		'曹宪曹华分包移至祈福',
+		'海外服全新爆料武将 张昭，张纮，以及全新概念：昂扬技',
+		'甄姬，蔡文姬，卧龙诸葛亮，冯方女，武将姓名还原',
+		'内存减负，移除炉石传说，昆特牌，万智牌，守望先锋 分包',
+		'将 DIY包中的垃圾桶更名为前尘往事，避免攻击性词汇',
 		'其他技能调整和bug修复',
 	],
 	files:[
-		//'LICENSE',
 		//'card/extra.js',
 		//'card/gujian.js',
 		//'card/guozhan.js',
@@ -102,5 +104,8 @@ window.noname_update={
 		//'theme/style/hp/image/xinround2.png',
 		//'theme/style/hp/image/xinround3.png',
 		//'theme/style/hp/image/xinround4.png',
+		// 'extension/仙剑奇侠传/extension.js',
+		// 'extension/古剑奇谭/extension.js',
+		// 'extension/轩辕剑/extension.js',
 	]
 };

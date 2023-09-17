@@ -2524,7 +2524,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 			zhangliao:'张辽',
 			xuzhu:'许褚',
 			guojia:'郭嘉',
-			zhenji:'甄宓',
+			zhenji:'甄姬',
 			liubei:'刘备',
 			guanyu:'关羽',
 			zhangfei:'张飞',

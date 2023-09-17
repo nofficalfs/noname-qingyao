@@ -41,7 +41,6 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 			qiuliju:['male','qun','4/6',['koulve','qljsuiren']],
 			re_hucheer:['male','qun',4,['redaoji','fuzhong']],
 			re_dongcheng:['male','qun',4,['xuezhao']],
-			tangji:['female','qun',3,['jielie','kangge']],
 			zhangheng:['male','qun',8,['dangzai','liangjue']],
 			duanwei:['male','qun',4,['langmie']],
 			re_niujin:['male','wei',4,['recuorui','reliewei']],
@@ -52,7 +51,8 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 			zhaozhong:['male','qun',6,['yangzhong','huangkong']],
 			hanfu:['male','qun',4,['hfjieying','weipo']],
 			re_quyi:['male','qun',4,['refuqi','jiaozi']],
-			dongxie:['female','qun','3/4',['juntun','jiaojie']],
+			//dongxie:['female','qun','3/4',['juntun','jiaojie']],
+			dongxie:['female','qun',4,['dcjiaoxia','dchumei']],
 			wangrong:['female','qun',3,['minsi','jijing','zhuide']],
 			ol_dingyuan:['male','qun',4,['cixiao','xianshuai']],
 			xin_baosanniang:['female','shu',3,['decadewuniang','decadexushen']],
@@ -93,7 +93,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 		},
 		characterSort:{
 			sp2:{
-				sp_whlw:["xurong","lijue","zhangji","fanchou","guosi","duanwei","liangxing","zhangheng",'tangji','niufu','dongxie'],
+				sp_whlw:["xurong","lijue","zhangji","fanchou","guosi","duanwei","liangxing","zhangheng",'niufu','dongxie'],
 				sp_zlzy:["zhangqiying","lvkai","zhanggong","weiwenzhugezhi","beimihu"],
 				sp_longzhou:["xf_tangzi","xf_huangquan","xf_sufei","sp_liuqi"],
 				sp_zizouqi:["mangyachang","xugong","zhangchangpu"],
@@ -112,6 +112,172 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 			}
 		},
 		skill:{
+			dcjiaoxia:{
+				mod:{
+					cardUsableTarget:function(card,player,target){
+						if(!player.isPhaseUsing()) return;
+						if(card.name=='sha'&&!player.getStorage('dcjiaoxia_mark').contains(target)) return true;
+					},
+				},
+				audio:2,
+				trigger:{player:'phaseUseBegin'},
+				filter:function(event,player){
+					return player.countCards('h');
+				},
+				check:function(event,player){
+					return player.countCards('h',card=>{
+						return game.hasPlayer(target=>{
+							var cardx=get.autoViewAs({name:'sha'},[card]);
+							return player.canUse(cardx,target)&&get.effect(target,cardx,player,player)>0&&(!player.hasUseTarget(card)||player.hasValueTarget(card));
+						});
+					});
+				},
+				content:function(){
+					var cards=player.getCards('h');
+					player.addTempSkill('dcjiaoxia_used','phaseUseAfter');
+					player.addGaintag(cards,'dcjiaoxia_used');
+				},
+				group:'dcjiaoxia_load',
+				subSkill:{
+					load:{
+						charlotte:true,
+						trigger:{player:'useCard1'},
+						filter:function(event,player){
+							if(!player.isPhaseUsing()) return false;
+							return event.card.name=='sha'&&event.targets&&event.targets.some(target=>!player.getStorage('dcjiaoxia_mark').contains(target));
+						},
+						forced:true,
+						popup:false,
+						firstDo:true,
+						content:function(){
+							player.addTempSkill('dcjiaoxia_mark','phaseUseAfter');
+							player.markAuto('dcjiaoxia_mark',trigger.targets.filter(target=>!player.getStorage('dcjiaoxia_mark').contains(target)));
+						},
+					},
+					mark:{
+						charlotte:true,
+						onremove:true,
+					},
+					used:{
+						mod:{
+							aiOrder:function(player,card,num){
+								if(get.itemtype(card)=='card'&&card.hasGaintag('dcjiaoxia_used')) return num+1;
+							},
+							cardname:function(card,player){
+								if(get.itemtype(card)=='card'&&card.hasGaintag('dcjiaoxia_used')) return 'sha';
+							},
+						},
+						charlotte:true,
+						onremove:function(player){
+							player.removeGaintag('dcjiaoxia_used');
+						},
+						trigger:{player:'useCardAfter'},
+						filter:function(event,player){
+							return event.cards&&event.cards.length==1&&player.hasUseTarget(get.copy(event.cards[0]))&&player.getHistory('lose',evt=>{
+								if(evt.getParent()!=event) return false;
+								for(var i in evt.gaintag_map){
+									if(evt.gaintag_map[i].contains('dcjiaoxia_used')) return true;
+								}
+								return false;
+							}).length&&player.getHistory('sourceDamage',evt=>evt.card==event.card).length;
+						},
+						direct:true,
+						content:function(){
+							var card=get.copy(trigger.cards[0]);
+							player.chooseUseTarget(card,get.prompt('dcjiaoxia'),false,false).set('prompt2','视为使用'+get.translation(card)).logSkill='dcjiaoxia';
+						},
+					},
+				},
+			},
+			dchumei:{
+				subSkill:{
+					0:{charlotte:true},
+					1:{charlotte:true},
+					2:{charlotte:true},
+				},
+				onChooseToUse:function(event){
+					if(!game.online&&!event.dchumei_num){
+						var player=event.player;
+						var evtx=event.getParent('phaseUse');
+						event.set('dchumei_num',player.getHistory('sourceDamage',function(evt){
+							return evt.getParent('phaseUse')==evtx;
+						}).length);
+					}
+				},
+				audio:2,
+				enable:'phaseUse',
+				filter:function(event,player){
+					if(typeof event.dchumei_num!='number') return false;
+					return game.hasPlayer(target=>lib.skill.dchumei.filterTarget(null,player,target));
+				},
+				filterTarget:function(card,player,target){
+					if(target.hp>_status.event.dchumei_num) return false;
+					if(!player.hasSkill('dchumei_0')) return true;
+					if(!player.hasSkill('dchumei_1')&&target.countCards('he')) return true;
+					if(!player.hasSkill('dchumei_2')&&target.isDamaged()) return true;
+					return false;
+				},
+				content:function(){
+					'step 0'
+					var str=get.translation(target);
+					player.chooseButton([
+						'狐魅：请选择一项',
+						[[
+							[0,'令'+str+'摸一张牌'],
+							[1,'令'+str+'交给你一张牌'],
+							[2,'令'+str+'回复1点体力'],
+						].filter(list=>{
+							if(player.hasSkill('dchumei_'+list[0])) return false;
+							if(list[0]==1&&!target.countCards('he')) return false;
+							if(list[0]==2&&target.isHealthy()) return false;
+							return true;
+						}),'textbutton']
+					],true).set('filterButton',button=>{
+						var target=_status.event.target;
+						if(player.hasSkill('dchumei_'+button.link)) return false;
+						if(button.link==1&&!target.countCards('he')) return false;
+						if(button.link==2&&target.isHealthy()) return false;
+						return true;
+					}).set('ai',function(button){
+						var target=_status.event.target;
+						return [
+							get.effect(target,{name:'wuzhong'},player,player)/2,
+							get.effect(target,{name:'shunshou_copy2'},player,player),
+							get.recoverEffect(target,player,player),
+						][button.link];
+					}).set('target',target);
+					'step 1'
+					if(result.bool){
+						var num=result.links[0];
+						player.addTempSkill('dchumei_'+num,'phaseUseAfter');
+						switch(num){
+							case 0:
+							target.draw();
+							break;
+							case 1:
+							target.chooseCard('狐魅：交给'+get.translation(player)+'一张牌','he',true);
+							break;
+							case 2:
+							target.recover();
+							break;
+						}
+						if(num!=1) event.finish();
+					}
+					else event.finish();
+					'step 2'
+					if(result.bool) player.gain(result.cards,target,'giveAuto');
+				},
+				ai:{
+					order:1,
+					result:{
+						target:function(player,target){
+							if(!player.hasSkill('dchumei_0')) return 1;
+							if(!player.hasSkill('dchumei_1')) return -1;
+							if(!player.hasSkill('dchumei_2')) return 1;
+						},
+					},
+				},
+			},
 			//新服灭霸
 			dcmianyao:{
 				audio:2,
@@ -4497,132 +4663,6 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 							},
 						},
 					},
-				},
-			},
-			//唐姬
-			jielie:{
-				audio:2,
-				trigger:{player:'phaseBegin'},
-				direct:true,
-				filter:function(event,player){
-					return player.phaseNumber==1&&!player.storage.jielie&&game.hasPlayer(current=>current!=player);
-				},
-				content:function(){
-					'step 0'
-					player.chooseTarget('请选择【抗歌】的目标','其于回合外摸牌后，你摸等量的牌；其进入濒死状态时，你可令其回复体力至1点；其死亡后，你弃置所有牌并失去1点体力',lib.filter.notMe,true).set('ai',function(target){
-						return get.attitude(_status.event.player,target)>0;
-					});
-					'step 1'
-					if(result.bool){
-						var target=result.targets[0];
-						player.logSkill('jielie',target);
-						player.addSkill('jielie_clear');
-						player.storage.jielie=target;
-						player.markSkill('jielie');
-						game.delayx();
-					}
-				},
-				intro:{content:'已指定$为目标'},
-				group:['jielie_draw','jielie_dying','jielie_die'],
-				subSkill:{
-					draw:{
-						audio:'jielie',
-						trigger:{
-							global:['gainAfter','loseAsyncAfter'],
-						},
-						forced:true,
-						filter:function(event,player){
-							if(player.countMark('jielie_draw')>=3) return false;
-							var target=player.storage.jielie;
-							return target&&target!=_status.currentPhase&&event.getg(target).length>0;
-						},
-						logTarget:'player',
-						content:function(){
-							var num=Math.min(3-player.countMark('jielie_draw'),trigger.getg(player.storage.jielie).length);
-							player.addMark('jielie_draw',num,false);
-							player.draw(num);
-						},
-					},
-					clear:{
-						trigger:{global:'phaseBeginStart'},
-						forced:true,
-						firstDo:true,
-						popup:false,
-						charlotte:true,
-						filter:function(event,player){
-							return player.countMark('jielie_draw')>0;
-						},
-						content:function(){
-							player.removeMark('jielie_draw',player.countMark('jielie_draw'),false);
-						},
-					},
-					dying:{
-						audio:'jielie',
-						trigger:{global:'dying'},
-						logTarget:'player',
-						filter:function(event,player){
-							return event.player==player.storage.jielie&&event.player.hp<1&&!player.hasSkill('jielie_temp');
-						},
-						check:function(event,player){
-							return get.attitude(player,event.player)>0;
-						},
-						prompt2:'令其将体力值回复至1点',
-						content:function(){
-							trigger.player.recover(1-trigger.player.hp);
-							player.addTempSkill('jielie_temp','roundStart');
-						},
-					},
-					temp:{},
-					die:{
-						audio:'jielie',
-						trigger:{global:'dieAfter'},
-						filter:function(event,player){
-							return event.player==player.storage.jielie;
-						},
-						forced:true,
-						content:function(){
-							var cards=player.getCards('he');
-							if(cards.length) player.discard(cards);
-							player.loseHp();
-						},
-					},
-				},
-				ai:{
-					threaten:2,
-				},
-			},
-			kangge:{
-				audio:2,
-				trigger:{player:'damageBegin4'},
-				direct:true,
-				filter:function(event,player){
-					return ((!event.source)||(event.source!=player&&event.source!=player.storage.jielie))&&player.storage.jielie&&player.storage.jielie.isIn();
-				},
-				content:function(){
-					'step 0'
-					player.chooseControl(lib.suit.slice(0),'cancel2').set('prompt',get.prompt('kangge')).set('prompt2','防止伤害并改为失去等量体力，且令'+get.translation(player.storage.jielie)+'从弃牌堆中获得等量的花色牌').set('ai',function(){
-						var player=_status.event.player;
-						if(get.attitude(player,player.storage.jielie)<=0) return 'cancel2';
-						return lib.suit.randomGet();
-					});
-					'step 1'
-					if(result.control!='cancel2'){
-						event.suit=result.control;
-						player.logSkill('kangge',player.storage.jielie);
-						trigger.cancel();
-						player.loseHp(trigger.num);
-					}
-					else event.finish();
-					'step 2'
-					var cards=[];
-					while(cards.length<trigger.num){
-						var card=get.discardPile(function(card){
-							return get.suit(card,false)==event.suit&&!cards.contains(card)
-						});
-						if(card) cards.push(card);
-						else break;
-					}
-					if(cards.length) player.storage.jielie.gain(cards,'gain2');
 				},
 			},
 			//张横
@@ -9669,7 +9709,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 					player:"enterGame",
 				},
 				forced:true,
-				filter:function(event){
+				filter:function(event,player){
 					return game.hasPlayer(current=>current!=player)&&(event.name!='phase'||game.phaseNumber==0);
 				},
 				content:function(){
@@ -9914,7 +9954,6 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 		card:{
 		},
 		characterIntro:{
-			tangji:'唐姬，会稽太守唐瑁女，弘农怀王刘辩的妃子。刘辩死后，唐姬回归故里，因节烈不愿改嫁他人，后被汉献帝下诏封为弘农王妃。',
 			lijue:"李傕（jué，一说“傕”读音“què”）（？—198年），字稚然。北地郡泥阳县（今陕西省耀县）人，汉末群雄之一。东汉末年汉献帝时的军阀、权臣，官至大司马、车骑将军、开府、领司隶校尉、假节。<br>李傕本为董卓部将，后被董卓的女婿牛辅派遣至中牟与朱儁交战，大破朱儁，进而至陈留、颍川等地劫掠。初平三年（192年）董卓和牛辅被杀后，李傕归无所依，于是采用贾诩之谋，伙同郭汜、张济、樊稠等原董卓部曲将攻向长安。击败吕布，杀死王允等人，占领长安，把持朝廷大权。后诸将不和，李傕在会议上杀死了樊稠，又与郭汜分别劫持了汉献帝和众臣，相互交战，张济率兵赶来和解，于是二人罢兵，李傕出屯池阳黄白城，郭汜、张济等人随汉献帝东归前往弘农。<br>后来，李傕、郭汜、张济反悔，联合起来追击汉献帝，与杨奉、董承等人几番交战。汉献帝一路逃亡，狼狈不堪，到达安邑，与李傕等人讲和。不久，汉献帝被曹操迎往许都。建安三年（198年），曹操派谒者仆射裴茂召集关西诸将段煨等人征讨李傕，灭其三族。",
 			zhangji:"张济（？－196年），武威郡祖厉县（今甘肃靖远东南）人。东汉末年割据军阀之一。 张济原为董卓部将，董卓被诛杀后，张济与李傕一同率军攻破长安，任中郎将。不久，升任镇东将军，封平阳侯，出屯弘农。献帝东迁时，张济升任骠骑将军，率军护卫献帝，后来因与董承等人有矛盾，便与李傕、郭汜一同追赶献帝。 建安元年（196年），张济因军队缺粮而进攻穰城，中流矢而死。死后，部队由侄儿张绣接管。",
 			guosi:"郭汜（？－197年），又名郭多，凉州张掖（今甘肃张掖西北）人，东汉末年将领、军阀，献帝时权臣。原为董卓部下。董卓被杀后，凉州众将归无所依，于是采用贾诩之谋，联兵将攻向长安，击败吕布，杀死王允等人，占领长安，把持朝廷大权。几年后，郭汜被部将伍习杀死。",
@@ -9952,7 +9991,6 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 			zhangmiao:'张邈（？－195年），字孟卓，东平寿张（今山东东平县）人。东汉大臣、名士，“八厨”之一。举孝廉出身，授骑都尉，出任陈留太守。参与讨伐董卓，参加汴水之战，归附于曹操。兴平元年（194年），趁着曹操讨伐徐州牧陶谦，联合陈宫发动叛乱，迎立吕布为兖州牧。受到曹操讨伐，兵败投奔徐州牧刘备。兴平二年，张邈向袁术借兵途中，被部下所杀。',
 			duanwei:'段煨（？～209年），字忠明，武威郡姑臧（今甘肃省武威市）人也。东汉末年将领，东汉太尉段颎同族兄弟，与太尉贾诩、张济、宣威侯张绣乃是同乡。原为董卓帐下将领，奉命屯兵华阴，勤劳农业。兴平二年（195年），迎接汉献帝刘协东归洛阳，供给衣食补给，与护驾将领杨定不和，引发激战十余天，听从汉献帝刘协劝解。东汉建安三年（198年），攻打黄白城，击杀李傕，夷其三族，封为镇远将军、闅乡亭侯、北地太守，累迁大鸿胪、金光禄大夫。建安十四年（209年），寿终正寝。',
 			zhangheng:'张横，生卒年不详，武威郡姑臧人，东汉末年凉州军阀之一。与梁兴、贾诩、段煨乃是同乡。建安三年（198），张横与梁兴、段煨等斩杀李傕。十六年（211），同韩遂、马超联合，起兵反抗曹操，兵败后不知所终。',
-			tangji:'唐姬，会稽太守唐瑁女，弘农怀王刘辩的妃子。刘辩死后，唐姬回归故里，因节烈不愿改嫁他人，后被汉献帝下诏封为弘农王妃。',
 			wenqin:'文钦（？~258年），字仲若，沛国谯郡（今安徽省亳州市）人，三国时期曹魏将领，曹操部将文稷之子。魏明帝太和年间文钦任牙门将、五营校督，后拜庐江太守、冠军将军，嘉平元年（249年），曹爽及其同党在高平陵之变中被杀，文钦心中不安，执政的司马氏集团为了安抚文钦，升其为前将军、扬州刺史，任职期间结交镇东将军毌丘俭。击退吴国太傅诸葛恪进攻，取得一定战果。正元二年（255年），文钦与镇东将军毌丘俭在扬州起兵讨伐司马师，兵败后投奔吴国，被封为镇北大将军、幽州牧，封谯侯。甘露二年（257年），文钦随吴军援救起兵反抗司马氏的诸葛诞，此后因被司马昭大军围困，军情告急，文钦与诸葛诞本就有矛盾，对文钦日益不满的诸葛诞遂将文钦杀死。淮南平定之后，文钦遗体被其二子收敛安葬。',
 			qiuliju:'丘力居，东汉末年的辽西乌丸大人。拉拢中山太守张纯反叛东汉，寇略青、徐、幽、冀四州，杀略吏民。死时认为儿子楼班年幼，于是让从子蹋顿总摄三王部。',
 			liuba:'刘巴（？－222年），字子初，荆州零陵郡烝阳县（今湖南省衡阳县、邵东县一带）人，东汉末年至三国时期蜀汉时期官员、名士。刘巴少知名，荆州牧刘表多次征用推举，刘巴均不应就。曹操征伐荆州，荆州士人多归刘备，刘巴却北上投靠曹操。后受曹操命令招降荆南三郡，不料先为刘备所得，刘巴不能复命曹操，遂远至交趾，又辗转进入益州。刘备平定益州后，刘巴归附刘备，为左将军西曹掾，法正死后接任尚书令。章武二年（222年）去世。刘巴博学多才，为刘备解决入蜀后的财政困难问题，又与诸葛亮等共制蜀汉的法律文件《蜀科》。为人简朴清高，退无私交，曹魏大臣陈群甚敬重之。所著录于《刘令君集》。',
@@ -10356,11 +10394,6 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 			dangzai_info:'出牌阶段开始时，你可将一名其他角色判定区内的一张牌移动至你的判定区内。',
 			liangjue:'粮绝',
 			liangjue_info:'锁定技，当有黑色牌进入或者离开你的判定区或装备区后，若你的体力值大于1，你失去1点体力，然后摸两张牌。',
-			tangji:'唐姬',
-			jielie:'抗歌',
-			jielie_info:'你的第一个回合开始时，选择一名其他角色，该角色每次于其回合外获得牌后，你摸等量的牌（每回合至多摸三张）；其进入濒死状态时，你可令其回复体力至1点（每轮限一次）。该角色死亡时，你弃置所有牌并失去1点体力。',
-			kangge:'节烈',
-			kangge_info:'当你受到除自己和“抗歌”角色以外的角色造成的伤害时，你可以防止此伤害并选择一种花色，然后你失去X点体力，令“抗歌”角色从弃牌堆中随机获得X张此花色的牌（X为伤害值）。',
 			re_dongcheng:'董承',
 			xuezhao:'血诏',
 			xuezhao_info:'出牌阶段限一次，你可弃置一张手牌并选择至多X名其他角色(X为你的体力上限）。这些角色依次选择是否交给你一张牌，若选择是，该角色摸一张牌且你本回合可多使用一张【杀】；若选择否，该角色本回合无法响应你使用的牌。',
@@ -10556,6 +10589,10 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 			dcmianyao_info:'摸牌阶段结束时，你可以展示手牌中点数最小的一张牌并将此牌随机插入牌堆中。然后你于此回合结束时摸等同于此牌点数的牌。',
 			dcchangqu:'长驱',
 			dcchangqu_info:'出牌阶段限一次。你可以开一艘战舰（你从你的上家或下家开始选择任意名座位连续的其他角色，且起点角色获得“战舰”标记）。这些角色按照你选择的顺序依次执行：{若其有本次获得的“战舰”，其选择一项：1.交给你X张手牌，然后将“战舰”移动给你选择的下一名目标角色；2.令其下次受到的属性伤害值+X，然后横置（X为本次〖长驱〗中选项一被选择过的次数且至少为1）。}。',
+			dcjiaoxia:'狡黠',
+			dcjiaoxia_info:'①出牌阶段开始时，你可以令自己的所有手牌于此阶段均视为【杀】。若如此做，你使用以此法转化的【杀】造成伤害后，你可以视为使用此牌对应的原卡牌。②出牌阶段，你对你本阶段未使用过【杀】的角色使用【杀】无次数限制。',
+			dchumei:'狐魅',
+			dchumei_info:'出牌阶段各限一次，你可以选择一名体力值不大于X的角色，令其：①摸一张牌。②交给你一张牌。③回复1点体力。（X为你本阶段造成伤害的次数）',
 			
 			sp_whlw:"文和乱武",
 			sp_zlzy:"逐鹿中原",

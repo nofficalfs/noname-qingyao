@@ -5,7 +5,14 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 		connect:true,
 		characterSort:{
 			tw:{
-				tw_sp:['tw_fuwan','tw_yujin','tw_zhaoxiang','tw_hucheer','tw_hejin','tw_mayunlu','tw_re_caohong','tw_zangba','tw_liuhong','tw_tianyu','jiachong','duosidawang','wuban','yuejiu','tw_caocao','tw_zhangmancheng','tw_caozhao','tw_wangchang','tw_puyangxing','tw_jiangji','tw_niujin','tw_xiahouen','tw_xiahoushang','tw_zhangji','tw_zhangnan','tw_fengxí','tw_furong','tw_liwei','tw_yangyi','tw_daxiaoqiao','tw_dengzhi','tw_baoxin','tw_bingyuan','tw_fanchou','tw_haomeng','tw_huchuquan','tw_jianshuo','tw_jiling','tw_liufuren','tw_liuzhang','tw_mateng','tw_niufudongxie','tw_qiaorui','tw_weixu','tw_yanxiang','tw_yufuluo','tw_zhangning','tw_dengzhi','tw_yangyi','tw_yangang','tw_gongsunfan'],
+				tw_sp:['tw_fuwan','tw_yujin','tw_zhaoxiang','tw_hucheer','tw_hejin','tw_mayunlu','tw_re_caohong',
+				'tw_zangba','tw_liuhong','tw_tianyu','jiachong','duosidawang','wuban','yuejiu','tw_caocao','tw_zhangmancheng',
+				'tw_caozhao','tw_wangchang','tw_puyangxing','tw_jiangji','tw_niujin','tw_xiahouen','tw_xiahoushang',
+				'tw_zhangji','tw_zhangnan','tw_fengxí','tw_furong','tw_liwei','tw_yangyi','tw_daxiaoqiao','tw_dengzhi',
+				'tw_baoxin','tw_bingyuan','tw_fanchou','tw_haomeng','tw_huchuquan','tw_jianshuo','tw_jiling',
+				'tw_liufuren','tw_liuzhang','tw_mateng','tw_niufudongxie','tw_qiaorui','tw_weixu','tw_yanxiang',
+				'tw_yufuluo','tw_zhangning','tw_dengzhi','tw_yangyi','tw_yangang','tw_gongsunfan','tw_zhangzhao',
+				'tw_zhanghong'],
 				tw_yunchouzhi:['tw_wangcan','tw_dongzhao','tw_bianfuren','tw_feiyi','tw_chenzhen','tw_xunchen'],
 				tw_yunchouxin:['tw_wangling','tw_huojun','tw_wujing','tw_zhouchu'],
 				tw_yunchouren:['tw_xujing','tw_qiaogong'],
@@ -19,6 +26,8 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 			},
 		},
 		character:{
+			tw_zhangzhao:['male','wu',4,['twlijian','twchungang']],
+			tw_zhanghong:['male','wu',4,['twquanqian','twrouke']],
 			tw_gongsunfan:['male','qun',4,['twhuiyuan','twshoushou']],
 			tw_yangang:['male','qun',4,['twzhiqu','twxianfeng']],
 			xia_xiahouzie:['female','qun','3/4',['twxuechang','twduoren']],
@@ -158,6 +167,10 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 			yangang:'严纲（163~191年），东汉末年公孙瓒部下的冀州刺史。汉献帝初平二年（191年），袁绍与公孙瓒在界桥交战，严纲为袁绍部下麹义所斩。',
 			gongsunfan:'公孙范，辽西令支（今河北迁安）人。东汉末年武将，公孙瓒从弟，官至勃海太守。公孙瓒起兵攻打袁绍之时，袁绍畏惧公孙瓒的势力，将自己的勃海太守印绶给予公孙范，意图和解，结果公孙范反而起勃海之兵帮助公孙瓒。初平二年（191年），公孙范以勃海兵助公孙瓒率二万人大破青、徐黄巾军。最后于界桥之战与公孙瓒一同败走。',
 		},
+		characterTitle:{
+			tw_zhangzhao:'功勋克举',
+			tw_zhanghong:'为世令器',
+		},
 		card:{
 			dz_mantianguohai:{
 				fullskin:true,
@@ -270,6 +283,280 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 			},
 		},
 		skill:{
+			twquanqian:{
+				audio:2,
+				enable:'phaseUse',
+				filter:function(event,player){
+					return !player.hasSkill('twquanqian_stat')&&player.countCards('h')&&game.countPlayer()>1;
+				},
+				filterCard:function(card,player){
+					return !ui.selected.cards.some(cardx=>get.suit(cardx,player)==get.suit(card,player));
+				},
+				selectCard:[1,4],
+				check:function(card){
+					return 1/(get.value(card)||0.5);
+				},
+				position:'h',
+				complexCard:true,
+				discard:false,
+				lose:false,
+				delay:false,
+				filterTarget:lib.filter.notMe,
+				usable:1,
+				content:function(){
+					'step 0'
+					player.addSkill('twquanqian_stat');
+					player.give(cards,target);
+					if(cards.length<2) event.finish();
+					'step 1'
+					var card=get.cardPile2(card=>get.type(card)=='equip');
+					if(card) player.gain(card,'gain2');
+					'step 2'
+					if(player.countCards('h')>=target.countCards('h')){
+						if(target.countCards('h')) event._result={index:1};
+						else event.finish();
+					}
+					else{
+						var str=get.translation(target);
+						player.chooseControl().set('choiceList',[
+							'将手牌数摸至与'+str+'相同',
+							'观看'+str+'的手牌并获得其一种花色的所有手牌',
+						]).set('ai',()=>{
+							var player=_status.event.player;
+							var target=_status.event.target;
+							if(target.countCards('h')-player.countCards('h')>target.countCards('h')/4||get.attitude(player,target)>0) return 0;
+							return 1;
+						});
+					}
+					'step 3'
+					if(result.index==0){
+						player.drawTo(target.countCards('h'));
+						event.finish();
+						return;
+					}
+					var list=[];
+					var dialog=['劝迁：获得'+get.translation(target)+'一种花色的所有牌'];
+					for(var suit of lib.suit.concat('none')){
+						if(target.countCards('h',{suit:suit})){
+							dialog.push('<div class="text center">'+get.translation(suit+'2')+'牌</div>');
+							dialog.push(target.getCards('h',{suit:suit}));
+							list.push(suit);
+						}
+					}
+					if(!list.length){
+						event.finish();
+						return;
+					}
+					player.chooseControl(list).set('dialog',dialog).set('ai',()=>{
+						return _status.event.control;
+					}).set('control',(()=>{
+						var getv=(cards)=>cards.map(i=>get.value(i)).reduce((p,c)=>p+c,0);
+						return list.sort((a,b)=>{
+							return getv(target.getCards('h',{suit:b}))-getv(target.getCards('h',{suit:a}));
+						})[0];
+					})());
+					'step 4'
+					if(result.control) player.gain(target.getCards('h',{suit:result.control}),target,'give');
+				},
+				ai:{
+					order:7,
+					result:{
+						target:function(player,target){
+							return target.countCards('h');
+						},
+					},
+				},
+				subSkill:{
+					stat:{
+						charlotte:true,
+						init:function(player){
+							player.storage.twquanqian_stat=0;
+						},
+						onremove:true,
+						mark:true,
+						intro:{
+							markcount:function(num){
+								return (num||0).toString();
+							},
+							content:'激昂：#/6',
+						},
+						trigger:{
+							player:'loseAfter',
+							global:'loseAsyncAfter',
+						},
+						filter:function(event,player){
+							if(event.type!='discard') return false;
+							var evt=event.getl(player);
+							return evt&&evt.hs&&evt.hs.length;
+						},
+						forced:true,
+						popup:false,
+						firstDo:true,
+						content:function(){
+							'step 0'
+							player.addMark('twquanqian_stat',trigger.getl(player).hs.length,false);
+							'step 1'
+							if(player.countMark('twquanqian_stat')>=6){
+								player.removeSkill('twquanqian_stat');
+								game.log('激昂：',player,'刷新','#g'+get.translation('twquanqian'));
+							}
+						},
+					},
+				},
+			},
+			twrouke:{
+				audio:2,
+				trigger:{
+					player:'gainAfter',
+					global:'loseAsyncAfter'
+				},
+				filter:function(event,player){
+					var evt=event.getParent('phaseDraw');
+					if(evt&&evt.player==player) return false;
+					return event.getg(player).length>1;
+				},
+				forced:true,
+				content:function(){
+					player.draw();
+				},
+			},
+			twlijian:{
+				audio:2,
+				trigger:{
+					global:"phaseDiscardAfter",
+				},
+				filter:function(event,player){
+					if(player.hasSkill('twlijian_stat'))return false;
+					if(event.player!=player&&event.player.isIn()){
+						return event.player.getHistory('lose',function(evt){
+							return evt.type=='discard'&&evt.getParent('phaseDiscard')==event&&evt.hs.filterInD('d').length>0;
+						}).length>0;
+					}
+					return false;
+				},
+				checkx:function(event,player,cards,cards2){
+					if(cards.length>2||get.attitude(player,event.player)>0) return true;
+					for(var i=0;i<cards2.length;i++){
+						if(get.value(cards2[i],event.player,'raw')<0) return true;
+					}
+					return false;
+				},
+				direct:true,
+				preHidden:true,
+				content:function(){
+				"step 0"
+				var cards=[],cards2=[];
+				var target=trigger.player;
+				game.getGlobalHistory('cardMove',function(evt){
+					if(evt.name=='cardsDiscard'){
+						if(evt.getParent('phaseDiscard')==trigger){
+							var moves=evt.cards.filterInD('d');
+							cards.addArray(moves);
+							cards2.removeArray(moves);
+						}
+					}
+					if(evt.name=='lose'){
+						if(evt.type!='discard'||evt.position!=ui.discardPile||evt.getParent('phaseDiscard')!=trigger) return;
+						var moves=evt.cards.filterInD('d');
+						cards.addArray(moves);
+						if(evt.player==target) cards2.addArray(moves);
+						else cards2.removeArray(moves);
+					}
+				});
+				event.cardPs=cards;
+				if(!cards2.length) event.finish();               
+                player.chooseCardButton(cards,'选择获得的牌',[0,cards.length]).set('ai',function(button){//这技能怎么比风止小丑还抽象
+                        return get.value(button.link);
+                }).set('cards2').set('filterButton',function(button){
+                    return cards2.contains(button.link);
+                }).setHiddenSkill(event.name);
+                "step 1"
+                if(result.bool){
+					game.log(player,'发动了','#g【'+get.translation('twlijian')+'】');
+                    game.delay(0.5);
+                    if(result.links.length>0){
+						player.gain(result.links);
+						game.log(player,'获得了',result.links);
+					}
+					var cardNw=[];
+					if(result.links.length<event.cardPs.length){
+						cardNw = event.cardPs.filter(item => !result.links.includes(item));
+						trigger.player.gain(cardNw,'gain2').giver=player;
+					}
+					event.stat1=result.links.length;
+					event.stat2=cardNw.length;
+                    game.delay();
+					player.addSkill('twlijian_stat');
+                }
+				else event.finish();
+				"step 2"
+				if(event.stat1<event.stat2){
+					player.chooseBool('是否对'+get.translation(trigger.player)+'造成1点伤害').set('ai',()=>_status.event.bool).set('bool',get.damageEffect(target,player,player)>0);
+				}
+				else event.finish();
+				"step 3"
+				if(result.bool){
+					trigger.player.damage();
+				}					
+				},
+				ai:{
+					threaten:1.2,
+					expose:0.2,
+				},
+				subSkill:{
+					stat:{
+						forced:true,
+						charlotte:true,
+						popup:false,
+						mark:true,
+						intro:{
+							markcount:function(num){
+								return (num||0).toString();
+							},
+							content:'激昂：#/8',
+						},
+						init:function(player){
+							if(!player.storage.twlijian_stat)player.storage.twlijian_stat=0;
+							else player.storage.twlijian_stat=0;
+						},
+						onremove:true,
+						trigger:{
+							global:["loseAfter","cardsDiscardAfter","loseAsyncAfter","equipAfter"],
+						},
+						filter:function(event,player){
+							var cards=event.getd();
+        					if(cards.length)return true;
+							return false;
+						},
+						content:function(){
+							'step 0'
+							var cards=trigger.getd();
+							if(cards.length<=0)event.finish();
+							player.addMark('twlijian_stat',cards.length,false);
+							'step 1'
+							if(player.countMark('twlijian_stat')>=8){
+								player.removeSkill('twlijian_stat');
+								game.log('激昂：',player,'刷新','#g【'+get.translation('twlijian')+'】');
+							}
+						}
+					},
+				},
+			},
+			twchungang:{
+				audio:2,
+				forced:true,
+				trigger:{
+					global:"gainAfter",
+				},
+				filter:function(event,player){
+					var evt=event.getParent('phaseDraw');
+        			if(evt&&evt.name=='phaseDraw') return false;
+					return event.cards.length>=2&&event.player!=player;
+				},
+				content:function(){
+					trigger.player.chooseToDiscard(1,'he',true);
+				},
+			},
 			//公孙范
 			twhuiyuan:{
 				audio:2,
@@ -13959,6 +14246,16 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 			twhuiyuan_info:'当你于出牌阶段使用牌结算结束后，若你未于此阶段获得过此类型的牌，你可以展示一名角色的一张手牌，若此牌与你使用的牌类型相同，你获得此牌，否则你弃置此牌，然后其摸一张牌。游击：对其造成1点伤害。',
 			twshoushou:'收绶',
 			twshoushou_info:'①当你获得其他角色的牌时，若你在任意角色的攻击范围内，其他角色至你的距离+1。②当你造成或受到伤害后，若你不在任意其他角色的攻击范围内，其他角色至你的距离-1。',
+			tw_zhangzhao:'张昭',
+			twlijian:'力谏',
+			twlijian_info:'昂扬技，其他角色的弃牌阶段结束时，你可以选择获得任意张此阶段弃置的牌，然后将其余牌交给该角色，若其获得的牌数大于你，则你可以对其造成1点伤害。激昂：8张牌进入弃牌堆。',
+			twchungang:'纯刚',
+			twchungang_info:'锁定技，在其他角色在摸牌阶段外一次性获得不小于两张牌时，你令其弃置一张牌。',
+			tw_zhanghong:'张纮',
+			twquanqian:'劝迁',
+			twquanqian_info:'昂扬技，出牌阶段限一次，你可以将至多四张花色不同的手牌交给其他角色，若给出的牌数不小于2，则你从牌堆中随机获得一张装备牌。然后你选择一项：1. 你手牌摸至与其手牌数相同。2. 观看其手牌并选择一种花色，然后获得其手牌中所有选择花色的牌。激昂：你弃置6张牌。',
+			twrouke:'柔克',
+			twrouke_info:'锁定技，当你在摸牌阶段外一次性获得不小于两张牌时，你摸一张牌。',
 
 			tw_mobile:'海外服·稀有专属',
 			tw_yunchouzhi:'运筹帷幄·智',

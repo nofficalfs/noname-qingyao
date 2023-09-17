@@ -7918,7 +7918,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 			dengai:'邓艾',
 			sunce:'孙策',
 			zhangzhang:'张昭张纮',
-			caiwenji:'蔡琰',
+			caiwenji:'蔡文姬',
 			zuoci:'左慈',
 
 			zhurong:'祝融',
@@ -7978,7 +7978,7 @@ game.import('character',function(lib,game,ui,get,ai,_status){
 			wansha_info:'锁定技，你的回合内，除你以外，不处于濒死状态的角色不能使用【桃】。',
 			weimu_info:'锁定技，你不能成为黑色锦囊牌的目标。',
 
-			sp_zhugeliang:'卧龙',
+			sp_zhugeliang:'卧龙诸葛亮',
 			pangtong:'庞统',
 			xunyu:'荀彧',
 			dianwei:'典韦',
